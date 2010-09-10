@@ -12,9 +12,9 @@
 #                                                                            #
 ##############################################################################
 
-PROGRAM = mendel
+PROGRAM = extruder
 
-SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c
+SOURCES = $(PROGRAM).c 
 
 ##############################################################################
 #                                                                            #
@@ -22,7 +22,7 @@ SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c temp.c sermsg.c dd
 #                                                                            #
 ##############################################################################
 
-MCU_TARGET = atmega644p
+MCU_TARGET = atmega168p
 F_CPU = 16000000L
 
 ##############################################################################

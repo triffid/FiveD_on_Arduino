@@ -6,12 +6,12 @@
 // all numbers are integers, so no decimals, please :-)
 
 // calculate these values appropriate for your machine
-#define	STEPS_PER_MM_X		320
-#define	STEPS_PER_MM_Y		320
-#define	STEPS_PER_MM_Z		320
+#define	STEPS_PER_MM_X		8
+#define	STEPS_PER_MM_Y		8
+#define	STEPS_PER_MM_Z		678
 
 // http://blog.arcol.hu/?p=157 may help with this next one
-#define	STEPS_PER_MM_E		320
+#define	STEPS_PER_MM_E		2
 
 // this is how many steps to suck back the filament by when we stop
 #define	E_STARTSTOP_STEPS	20
@@ -21,9 +21,9 @@
 // again, all numbers are integers
 
 // used for G0 rapid moves and as a cap for all other feedrates
-#define	MAXIMUM_FEEDRATE_X	200
-#define	MAXIMUM_FEEDRATE_Y	200
-#define	MAXIMUM_FEEDRATE_Z	200
+#define	MAXIMUM_FEEDRATE_X	1500
+#define	MAXIMUM_FEEDRATE_Y	1500
+#define	MAXIMUM_FEEDRATE_Z	20
 #define	MAXIMUM_FEEDRATE_E	200
 
 // used when searching endstops and similar
@@ -68,7 +68,7 @@
 		note that each move takes a fair chunk of ram (69 bytes as of this writing) so don't make the buffer too big - a bigger serial readbuffer may help more than increasing this unless your gcodes are more than 70 characters long on average.
 		however, a larger movebuffer will probably help with lots of short consecutive moves, as each move takes a bunch of math (hence time) to set up
 */
-#define	MOVEBUFFER_SIZE	8
+#define	MOVEBUFFER_SIZE	32
 
 /*
 */

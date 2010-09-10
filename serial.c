@@ -3,8 +3,8 @@
 #include	"ringbuffer.h"
 #include	"arduino.h"
 
-#define		BUFSIZE			64
-#define		BAUD				115200
+#define		BUFSIZE			256
+#define		BAUD			115200
 
 #define		ASCII_XOFF	19
 #define		ASCII_XON		17
@@ -71,16 +71,16 @@ void serial_init()
 }
 
 /*
-	Interrupts
+	Interrupts, UART 0 for mendel
 */
 
-ISR(USART_RX_vect)
+ISR(USART0_RX_vect)
 {
 	if (buf_canwrite(rx))
 		buf_push(rx, UDR0);
 }
 
-ISR(USART_UDRE_vect)
+ISR(USART0_UDRE_vect)
 {
 	#if XONXOFF
 	if (flowflags & FLOWFLAG_SEND_XOFF) {

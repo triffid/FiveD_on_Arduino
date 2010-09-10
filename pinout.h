@@ -25,22 +25,26 @@
 	or adjust your electronics to suit this
 */
 
-#define	X_STEP_PIN						AIO0
-#define	X_DIR_PIN							AIO1
-#define	X_MIN_PIN							AIO2
+#define	X_STEP_PIN						DIO15
+#define	X_DIR_PIN						DIO18
+#define	X_MIN_PIN						DIO20
+#define X_ENABLE_PIN					DIO19
 
-#define	Y_STEP_PIN						AIO3
-#define	Y_DIR_PIN							AIO4
-#define	Y_MIN_PIN							AIO5
+#define	Y_STEP_PIN						DIO23
+#define	Y_DIR_PIN						DIO22
+#define	Y_MIN_PIN						DIO25
+#define Y_ENABLE_PIN					DIO24
 
-#define	Z_STEP_PIN						DIO2
-#define	Z_DIR_PIN							DIO3
-#define	Z_MIN_PIN							DIO4
+#define	Z_STEP_PIN						DIO27
+#define	Z_DIR_PIN						DIO28
+#define	Z_MIN_PIN						DIO30
+#define Z_ENABLE_PIN					DIO29
 
-#define	E_STEP_PIN						DIO7
-#define	E_DIR_PIN							DIO8
+#define	E_STEP_PIN						DIO17
+#define	E_DIR_PIN						DIO16
 
-#define	STEPPER_ENABLE_PIN		DIO9
+//Define this for a global stepper enable/disable,
+//#define	STEPPER_ENABLE_PIN		DIO9
 
 // list of PWM-able pins and corresponding timers
 // timer1 is used for step timing so don't use OC1A/OC1B (DIO9/DIO10)
@@ -147,6 +151,9 @@
 	// for connection to ATX PSU PWR_ON signal
 	#define	power_on()					do { WRITE(STEPPER_ENABLE_PIN, 0); SET_OUTPUT(STEPPER_ENABLE_PIN); } while (0)
 	#define	power_off()					SET_INPUT(STEPPER_ENABLE_PIN)
+#elif defined(X_ENABLE_PIN) && defined(Y_ENABLE_PIN) && defined(Z_ENABLE_PIN)
+	#define	power_on()					do { WRITE(X_ENABLE_PIN, 0); SET_OUTPUT(X_ENABLE_PIN); WRITE(Y_ENABLE_PIN, 0); SET_OUTPUT(Y_ENABLE_PIN); WRITE(Z_ENABLE_PIN, 0); SET_OUTPUT(Z_ENABLE_PIN); } while (0)
+	#define	power_off()					do { SET_INPUT(X_ENABLE_PIN); SET_INPUT(Y_ENABLE_PIN); SET_INPUT(Z_ENABLE_PIN);  } while (0)
 #else
 	#define	power_on()					if (0) {}
 	#define	power_off()					if (0) {}
