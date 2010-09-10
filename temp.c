@@ -38,8 +38,8 @@ int16_t		heater_p     = 0;
 int16_t		heater_i     = 0;
 int16_t		heater_d     = 0;
 
-#define		DEFAULT_P				8192
-#define		DEFAULT_I				512
+#define		DEFAULT_P				12000
+#define		DEFAULT_I				150
 #define		DEFAULT_D				-24576
 #define		DEFAULT_I_LIMIT	384
 int32_t		p_factor			= 0;
@@ -88,7 +88,8 @@ void temp_save_settings() {
 }
 
 uint16_t temp_read() {
-	return get_read_cmd() << 2;
+	current_temp = get_read_cmd() * 4;
+	return current_temp;
 }
 
 void temp_set(uint16_t t) {
@@ -131,10 +132,10 @@ void temp_print() {
 }
 
 void temp_tick() {
+	temp_read();
+
 	if (target_temp) {
 		steptimeout = 0;
-
-		temp_read();
 
 		temp_history[th_p++] = current_temp;
 		th_p &= (TH_COUNT - 1);
@@ -184,13 +185,17 @@ void temp_tick() {
 			sersendf_P(PSTR("T{E:%d, P:%d * %ld = %ld / I:%d * %ld = %ld / D:%d * %ld = %ld # O: %ld = %u}\n"), t_error, heater_p, p_factor, (int32_t) heater_p * p_factor / PID_SCALE, heater_i, i_factor, (int32_t) heater_i * i_factor / PID_SCALE, heater_d, d_factor, (int32_t) heater_d * d_factor / PID_SCALE, pid_output_intermed, pid_output);
 
 		#ifdef	HEATER_PWM
-			//HEATER_PWM = pid_output;
 			update_send_cmd(pid_output);
 		#else
 			if (pid_output >= 8)
 				enable_heater();
 			else
 				disable_heater();
+		#endif
+	}
+	else {
+		#ifdef	HEATER_PWM
+			update_send_cmd(0);
 		#endif
 	}
 }

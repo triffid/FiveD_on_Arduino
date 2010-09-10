@@ -30,7 +30,7 @@ typedef enum {
 	SEND_START2,
 	SEND_CMD,
 	SEND_CHK,
-
+	SEND_DONE,
 
 	READ_START1,
 	READ_START2,
@@ -58,7 +58,7 @@ void intercom_init(void)
 		UCSR1B = MASK(RXEN1) | MASK(TXEN1);
 		UCSR1C = MASK(UCSZ11) | MASK(UCSZ10);
 
-		UCSR1B |= MASK(RXCIE1);
+		UCSR1B |= MASK(RXCIE1) | MASK(TXCIE1);
 #else
 	#if INTERCOM_BAUD > 38401
 		UCSR0A = MASK(U2X0);
@@ -73,7 +73,7 @@ void intercom_init(void)
 		UCSR0B = MASK(RXEN0) | MASK(TXEN0);
 		UCSR0C = MASK(UCSZ01) | MASK(UCSZ00);
 
-		UCSR0B |= MASK(RXCIE0);
+		UCSR0B |= MASK(RXCIE0) | MASK(TXCIE0);
 #endif
 }
 
@@ -98,7 +98,6 @@ void start_send(void) {
 	state = SEND_START1;
 	enable_transmit();
 	delay_us(15);
-	write_byte(START1);
 	//Enable interrupts so we can send next characters
 #ifdef HOST
 	UCSR1B |= MASK(UDRIE1);
@@ -110,11 +109,6 @@ void start_send(void) {
 static void finish_send(void) {
 	state = READ_START1;
 	disable_transmit();
-#ifdef HOST
-	UCSR1B &= ~MASK(UDRIE1);
-#else
-	UCSR0B &= ~MASK(UDRIE0);
-#endif
 }
 
 
@@ -131,11 +125,14 @@ ISR(USART_RX_vect)
 
 #ifdef HOST
 	c = UDR1;
+	UCSR1A &= ~MASK(FE1) & ~MASK(DOR1) & ~MASK(UPE1);
 #else
 	c = UDR0;
+	UCSR0A &= ~MASK(FE0) & ~MASK(DOR0) & ~MASK(UPE0);
 #endif
-			
+	
 	if (state >= READ_START1) {
+		
 		switch(state) {
 		case READ_START1:
 			if (c == START1) state = READ_START2;
@@ -153,7 +150,7 @@ ISR(USART_RX_vect)
 					
 			if (chk == 255 - cmd) {	
 				//Values are correct, do something useful
-				WRITE(DEBUG_LED,1);
+			WRITE(DEBUG_LED,1);	
 				read_cmd = cmd;
 #ifdef EXTRUDER
 				start_send();
@@ -168,6 +165,25 @@ ISR(USART_RX_vect)
 			break;
 		}
 	}
+
+}
+
+#ifdef HOST
+ISR(USART1_TX_vect)
+#else
+ISR(USART_TX_vect)
+#endif
+{
+	if (state == SEND_DONE) {
+		finish_send();
+		
+					
+#ifdef HOST
+	UCSR1B &= ~MASK(TXCIE1);
+#else
+	UCSR0B &= ~MASK(TXCIE0);
+#endif
+	}
 }
 
 #ifdef HOST
@@ -178,19 +194,27 @@ ISR(USART_UDRE_vect)
 {
 	switch(state) {
 	case SEND_START1:
-		write_byte(START2);
+		write_byte(START1);
 		state = SEND_START2;
 		break;
 	case SEND_START2:
-		write_byte(send_cmd);
+		write_byte(START2);
 		state = SEND_CMD;
 		break;
 	case SEND_CMD:
-		write_byte(255 - send_cmd);
+		write_byte(send_cmd);
 		state = SEND_CHK;
 		break;
 	case SEND_CHK:
-		finish_send();
+		write_byte(255 - send_cmd);
+		state = SEND_DONE;
+#ifdef HOST
+	UCSR1B &= ~MASK(UDRIE1);
+	UCSR1B |= MASK(TXCIE1);
+#else
+	UCSR0B &= ~MASK(UDRIE0);
+	UCSR0B |= MASK(TXCIE0);
+#endif
 		break;
 	default:
 		break;

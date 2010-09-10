@@ -30,6 +30,11 @@ void io_init(void) {
 	#endif
 	ACSR = MASK(ACD);
 
+	SET_OUTPUT(PS_ON_PIN);
+	WRITE(PS_ON_PIN, 0);
+
+	delay_ms(500);
+
 	// setup I/O pins
 	WRITE(DEBUG_LED, 0);	SET_OUTPUT(DEBUG_LED);
 
@@ -51,10 +56,9 @@ void io_init(void) {
 	//Enable the RS485 transceiver
 	SET_OUTPUT(RX_ENABLE_PIN);
 	SET_OUTPUT(TX_ENABLE_PIN);
-	disable_transmit();
-
 	SET_OUTPUT(TX_485_PIN);
 	SET_INPUT(RX_485_PIN);
+	disable_transmit();
 
 
 	#ifdef	HEATER_PIN
@@ -120,9 +124,8 @@ void init(void) {
 void clock_250ms(void) {
 	// reset watchdog
 	wd_reset();
-
-	
-	sersendf_P(PSTR("CMD: %d\n"), get_read_cmd());
+			
+	start_send();
 
 	temp_tick();
 
@@ -157,7 +160,7 @@ int main (void)
 
 	update_send_cmd(0);
 
-	start_send();
+
 
 	// main loop
 	for (;;)

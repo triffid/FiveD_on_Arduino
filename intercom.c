@@ -73,7 +73,7 @@ void intercom_init(void)
 		UCSR0B = MASK(RXEN0) | MASK(TXEN0);
 		UCSR0C = MASK(UCSZ01) | MASK(UCSZ00);
 
-		UCSR0B |= MASK(RXCIE0) | MASK(TXCIE1);
+		UCSR0B |= MASK(RXCIE0) | MASK(TXCIE0);
 #endif
 }
 
@@ -109,11 +109,6 @@ void start_send(void) {
 static void finish_send(void) {
 	state = READ_START1;
 	disable_transmit();
-#ifdef HOST
-	UCSR1B &= ~MASK(UDRIE1);
-#else
-	UCSR0B &= ~MASK(UDRIE0);
-#endif
 }
 
 
@@ -130,11 +125,14 @@ ISR(USART_RX_vect)
 
 #ifdef HOST
 	c = UDR1;
+	UCSR1A &= ~MASK(FE1) & ~MASK(DOR1) & ~MASK(UPE1);
 #else
 	c = UDR0;
+	UCSR0A &= ~MASK(FE0) & ~MASK(DOR0) & ~MASK(UPE0);
 #endif
-			
+		
 	if (state >= READ_START1) {
+
 		switch(state) {
 		case READ_START1:
 			if (c == START1) state = READ_START2;
@@ -152,10 +150,10 @@ ISR(USART_RX_vect)
 					
 			if (chk == 255 - cmd) {	
 				//Values are correct, do something useful
-				WRITE(DEBUG_LED,1);
+		WRITE(DEBUG_LED,1);	
 				read_cmd = cmd;
 #ifdef EXTRUDER
-				start_send();
+		//		start_send();
 #endif
 			}
 			else
@@ -167,16 +165,24 @@ ISR(USART_RX_vect)
 			break;
 		}
 	}
+
 }
 
 #ifdef HOST
-ISR(USART1_TXC_vect)
+ISR(USART1_TX_vect)
 #else
-ISR(USART_TXC_vect)
+ISR(USART_TX_vect)
 #endif
 {
 	if (state == SEND_DONE) {
 		finish_send();
+		
+					
+#ifdef HOST
+	UCSR1B &= ~MASK(TXCIE1);
+#else
+	UCSR0B &= ~MASK(TXCIE0);
+#endif
 	}
 }
 
@@ -202,6 +208,13 @@ ISR(USART_UDRE_vect)
 	case SEND_CHK:
 		write_byte(255 - send_cmd);
 		state = SEND_DONE;
+#ifdef HOST
+	UCSR1B &= ~MASK(UDRIE1);
+	UCSR1B |= MASK(TXCIE1);
+#else
+	UCSR0B &= ~MASK(UDRIE0);
+	UCSR0B |= MASK(TXCIE0);
+#endif
 		break;
 	default:
 		break;

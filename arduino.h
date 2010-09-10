@@ -49,15 +49,7 @@
 #define	RXD									DIO0
 #define	TXD									DIO1
 
-// SPI
-#define	SCK									DIO13
-#define	MISO								DIO12
-#define	MOSI								DIO11
-#define	SS									DIO10
 
-// TWI (I2C)
-#define	SCL									AIO5
-#define	SDA									AIO4
 
 // timers and PWM
 #define	OC0A								DIO6
@@ -110,8 +102,8 @@
 
 #define DIO7_PIN  PINB7
 #define DIO7_RPORT	PINB
-#define DIO7_WPORT	PORTD
-#define DIO7_DDR		DDRD
+#define DIO7_WPORT	PORTB
+#define DIO7_DDR		DDRB
 
 #define DIO8_PIN  PIND0
 #define DIO8_RPORT	PIND

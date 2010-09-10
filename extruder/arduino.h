@@ -143,6 +143,11 @@
 #define DIO13_WPORT	PORTB
 #define DIO13_DDR		DDRB
 
+#define DIO16_PIN  PINC2
+#define DIO16_RPORT	PINC
+#define DIO16_WPORT	PORTC
+#define DIO16_DDR		DDRC
+
 #define AIO0_PIN		PINC0
 #define AIO0_RPORT	PINC
 #define AIO0_WPORT	PORTC
@@ -152,11 +157,6 @@
 #define AIO1_RPORT	PINC
 #define AIO1_WPORT	PORTC
 #define AIO1_DDR		DDRC
-
-#define AIO2_PIN  PINC2
-#define AIO2_RPORT	PINC
-#define AIO2_WPORT	PORTC
-#define AIO2_DDR		DDRC
 
 #define AIO3_PIN  PINC3
 #define AIO3_RPORT	PINC

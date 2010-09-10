@@ -55,9 +55,6 @@ void io_init(void) {
 	SET_OUTPUT(TX_ENABLE_PIN);
 	disable_transmit();
 
-	SET_OUTPUT(TXD);
-	SET_INPUT(RXD);
-
 	#ifdef	HEATER_PIN
 		WRITE(HEATER_PIN, 0); SET_OUTPUT(HEATER_PIN);
 	#endif
@@ -65,7 +62,7 @@ void io_init(void) {
 	#if defined(HEATER_PWM) || defined(FAN_PWM)
 		// setup PWM timer: fast PWM, no prescaler
 		TCCR2A = MASK(WGM21) | MASK(WGM20);
-		TCCR2B = MASK(CS20);
+		TCCR2B = MASK(CS22);
 		TIMSK2 = 0;
 		OCR2A = 0;
 		OCR2B = 255;
@@ -197,6 +194,8 @@ int main (void)
 
 	enable_heater();
 
+	start_send();
+
 	// main loop
 	for (;;)
 	{
@@ -211,9 +210,9 @@ int main (void)
 		//Calculate real temperature based on lookup table
 		for (i = 1; i < NUMTEMPS; i++) {
 			if (temptable[i][0] > raw_temp) {
-				raw_temp = temptable[i-1][1] + 
-						   (raw_temp - temptable[i-1][0]) *  (temptable[i][1] - temptable[i-1][1]) /  (temptable[i][0] - temptable[i-1][0]);
-
+				raw_temp = temptable[i][1] + 
+					(temptable[i][0] - raw_temp) * (temptable[i-1][1] - temptable[i][1]) / (temptable[i][0] - temptable[i-1][0]);
+		
 				break;
 			}
 		}
@@ -223,8 +222,7 @@ int main (void)
 		if (raw_temp > 255) raw_temp = 255;
 
 		//Update the intercom values
-		//update_send_cmd(raw_temp);
-		update_send_cmd(15);
+		update_send_cmd(raw_temp);
 
 		HEATER_PWM = get_read_cmd();
 	}
