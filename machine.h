@@ -11,7 +11,7 @@
 #define	STEPS_PER_MM_Z		678
 
 // http://blog.arcol.hu/?p=157 may help with this next one
-#define	STEPS_PER_MM_E		2
+#define	STEPS_PER_MM_E		8
 
 // this is how many steps to suck back the filament by when we stop
 #define	E_STARTSTOP_STEPS	20
