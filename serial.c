@@ -2,7 +2,7 @@
 
 #include	"arduino.h"
 
-#define		BUFSIZE			256
+#define		BUFSIZE			128
 #define		BAUD			115200
 
 #define		ASCII_XOFF	19

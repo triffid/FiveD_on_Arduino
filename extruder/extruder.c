@@ -51,10 +51,12 @@ void io_init(void) {
 	SET_INPUT(E_DIR_PIN);
 
 	//Enable the RS485 transceiver
-	WRITE(RX_ENABLE_PIN, 1);
 	SET_OUTPUT(RX_ENABLE_PIN);
-	WRITE(TX_ENABLE_PIN, 0);
 	SET_OUTPUT(TX_ENABLE_PIN);
+	disable_transmit();
+
+	SET_OUTPUT(TXD);
+	SET_INPUT(RXD);
 
 	#ifdef	HEATER_PIN
 		WRITE(HEATER_PIN, 0); SET_OUTPUT(HEATER_PIN);
@@ -86,15 +88,13 @@ void motor_init(void) {
 }
 
 ISR(PCINT0_vect) {
-	static uint8_t debug, coil_pos, pwm, flag;
+	static uint8_t coil_pos, pwm, flag;
 
 	if (flag == 1) flag = 0;
 	else flag = 1;
 		
 	//if the step pin is high, we advance the motor
 	if (flag) {
-		WRITE(DEBUG_LED,debug);
-		debug ^= 1;
 
 		//Turn on motors only on first tick to save power I guess
 		enable_motors();
@@ -223,7 +223,9 @@ int main (void)
 		if (raw_temp > 255) raw_temp = 255;
 
 		//Update the intercom values
-		update_send_cmd(raw_temp);
+		//update_send_cmd(raw_temp);
+		update_send_cmd(15);
+
 		HEATER_PWM = get_read_cmd();
 	}
 }

@@ -14,7 +14,7 @@
 
 PROGRAM = mendel
 
-SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c intercom.c
+SOURCES = $(PROGRAM).c serial.c intercom.c dda.c gcode.c timer.c clock.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c 
 
 ##############################################################################
 #                                                                            #
@@ -76,8 +76,8 @@ clean:
 
 size: $(PROGRAM).hex
 	@echo "  SIZE                   Atmega168        Atmega328p"
-	@$(OBJDUMP) -h mendel.elf | perl -ne '/.(text)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    FLASH: %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (14 * 1024), 14, $$a * 100 / (30 * 1024), 30 }'
-	@$(OBJDUMP) -h mendel.elf | perl -ne '/.(data|bss)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    RAM  : %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (1 * 1024), 1, $$a * 100 / (2 * 1024), 2 }'
+#	@$(OBJDUMP) -h mendel.elf | perl -ne '/.(text)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    FLASH: %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (14 * 1024), 14, $$a * 100 / (30 * 1024), 30 }'
+#	@$(OBJDUMP) -h mendel.elf | perl -ne '/.(data|bss)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    RAM  : %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (1 * 1024), 1, $$a * 100 / (2 * 1024), 2 }'
 
 %.o: %.c
 	@echo "  CC        $@"
@@ -101,4 +101,4 @@ size: $(PROGRAM).hex
 
 %.sym: %.elf
 	@echo "  SYM       $@"
-	@$(OBJDUMP) -t $< | perl -ne 'BEGIN { printf "  ADDR  NAME                  SIZE\n"; } /([0-9a-f]+)\s+(\w+)\s+O\s+\.(bss|data)\s+([0-9a-f]+)\s+(\w+)/ && printf "0x%04x  %-20s +%d\n", eval("0x$$1") & 0xFFFF, $$5, eval("0x$$4")' | sort -k1 > $@
+#	@$(OBJDUMP) -t $< | perl -ne 'BEGIN { printf "  ADDR  NAME                  SIZE\n"; } /([0-9a-f]+)\s+(\w+)\s+O\s+\.(bss|data)\s+([0-9a-f]+)\s+(\w+)/ && printf "0x%04x  %-20s +%d\n", eval("0x$$1") & 0xFFFF, $$5, eval("0x$$4")' | sort -k1 > $@

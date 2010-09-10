@@ -14,10 +14,6 @@
 
 #define	RESERVED_RXD					DIO0
 #define	RESERVED_TXD					DIO1
-#define	RESERVED_SCK					DIO13
-#define	RESERVED_MISO					DIO12
-#define	RESERVED_MOSI					DIO11
-#define	RESERVED_SS						DIO10
 
 /*
 	user defined pins
@@ -58,10 +54,14 @@
 #define	HEATER_PIN						DIO6
 #define	HEATER_PWM						OCR0A
 
+#define DEBUG_LED						DIO0
+
 #define	FAN_PIN								DIO5
 #define	FAN_PWM								OCR0B
 
 //RS485 Interface pins
+#define RX_485_PIN	  DIO8
+#define TX_485_PIN		DIO9
 #define RX_ENABLE_PIN DIO13
 #define TX_ENABLE_PIN DIO12
 
@@ -119,7 +119,7 @@
 	Intercom
 */
 #define enable_transmit()			do { WRITE(TX_ENABLE_PIN,1);  WRITE(RX_ENABLE_PIN,0); } while(0)
-#define disable_transmit()			do { WRITE(TX_ENABLE_PIN,0);  WRITE(RX_ENABLE_PIN,1);} while(0)
+#define disable_transmit()			do { WRITE(TX_ENABLE_PIN,0);  WRITE(RX_ENABLE_PIN,0);} while(0)
 
 /*
 	Heater

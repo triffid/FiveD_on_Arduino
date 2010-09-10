@@ -2,8 +2,10 @@
 
 #include	"arduino.h"
 #include	"pinout.h"
+#include	"timer.h"
 
-#define		BAUD			19200
+
+#define		INTERCOM_BAUD			19200
 
 //#define		EXTRUDER
 #define		HOST
@@ -28,7 +30,7 @@ typedef enum {
 	SEND_START2,
 	SEND_CMD,
 	SEND_CHK,
-
+	SEND_DONE,
 
 	READ_START1,
 	READ_START2,
@@ -40,38 +42,38 @@ typedef enum {
 intercom_state_e state = READ_START1;
 uint8_t cmd, chk, send_cmd, read_cmd;
 
-void intercom_init()
+void intercom_init(void)
 {
 #ifdef HOST
-	#if BAUD > 38401
+	#if INTERCOM_BAUD > 38401
 		UCSR1A = MASK(U2X1);
 	#else
 		UCSR1A = 0;
 	#endif
-	#if BAUD > 38401
-		UBRR1 = (((F_CPU / 8) / BAUD) - 0.5);
+	#if INTERCOM_BAUD > 38401
+		UBRR1 = (((F_CPU / 8) / INTERCOM_BAUD) - 0.5);
 	#else
-		UBRR1 = (((F_CPU / 16) / BAUD) - 0.5);
+		UBRR1 = (((F_CPU / 16) / INTERCOM_BAUD) - 0.5);
 	#endif
 		UCSR1B = MASK(RXEN1) | MASK(TXEN1);
 		UCSR1C = MASK(UCSZ11) | MASK(UCSZ10);
 
-		UCSR1B |= MASK(RXCIE1) | MASK(UDRIE1);
+		UCSR1B |= MASK(RXCIE1) | MASK(TXCIE1);
 #else
-	#if BAUD > 38401
+	#if INTERCOM_BAUD > 38401
 		UCSR0A = MASK(U2X0);
 	#else
 		UCSR0A = 0;
 	#endif
-	#if BAUD > 38401
-		UBRR0 = (((F_CPU / 8) / BAUD) - 0.5);
+	#if INTERCOM_BAUD > 38401
+		UBRR0 = (((F_CPU / 8) / INTERCOM_BAUD) - 0.5);
 	#else
-		UBRR0 = (((F_CPU / 16) / BAUD) - 0.5);
+		UBRR0 = (((F_CPU / 16) / INTERCOM_BAUD) - 0.5);
 	#endif
 		UCSR0B = MASK(RXEN0) | MASK(TXEN0);
 		UCSR0C = MASK(UCSZ01) | MASK(UCSZ00);
 
-		UCSR0B |= MASK(RXCIE0) | MASK(UDRIE0);
+		UCSR0B |= MASK(RXCIE0) | MASK(TXCIE1);
 #endif
 }
 
@@ -91,18 +93,11 @@ static void write_byte(uint8_t val) {
 #endif
 }
 
-static uint8_t read_byte(void) {
-#ifdef HOST
-	return UDR1;
-#else
-	return UDR0;
-#endif
-}
 
-static void start_send(void) {
-	enable_transmit();
+void start_send(void) {
 	state = SEND_START1;
-	write_byte(START1);
+	enable_transmit();
+	delay_us(15);
 	//Enable interrupts so we can send next characters
 #ifdef HOST
 	UCSR1B |= MASK(UDRIE1);
@@ -112,13 +107,13 @@ static void start_send(void) {
 }
 
 static void finish_send(void) {
+	state = READ_START1;
 	disable_transmit();
 #ifdef HOST
 	UCSR1B &= ~MASK(UDRIE1);
 #else
 	UCSR0B &= ~MASK(UDRIE0);
 #endif
-	state = READ_START1;
 }
 
 
@@ -131,35 +126,57 @@ ISR(USART1_RX_vect)
 ISR(USART_RX_vect)
 #endif
 {
-	uint8_t c = read_byte();
+	static uint8_t c;
 
-	switch(state) {
-	case READ_START1:
-		if (c == START1) state = READ_START2;
-		break;
-	case READ_START2:
-		if (c == START2) state = READ_CMD;
-		else			 state = READ_START1;
-		break;
-	case READ_CMD:
-		cmd = c;
-		state = READ_CHK;
-		break;
-	case READ_CHK:
-		chk = c;
+#ifdef HOST
+	c = UDR1;
+#else
+	c = UDR0;
+#endif
+			
+	if (state >= READ_START1) {
+		switch(state) {
+		case READ_START1:
+			if (c == START1) state = READ_START2;
+			break;
+		case READ_START2:
+			if (c == START2) state = READ_CMD;
+			else			 state = READ_START1;
+			break;
+		case READ_CMD:
+			cmd = c;
+			state = READ_CHK;
+			break;
+		case READ_CHK:
+			chk = c;
 					
-		if (chk == 255 - cmd) {	
-			//Values are correct, do something useful
-			read_cmd = cmd;
-			start_send();
+			if (chk == 255 - cmd) {	
+				//Values are correct, do something useful
+				WRITE(DEBUG_LED,1);
+				read_cmd = cmd;
+#ifdef EXTRUDER
+				start_send();
+#endif
+			}
+			else
+			{
+				state = READ_START1;
+			}
+			break;
+		default:
+			break;
 		}
-		else
-		{
-			state = READ_START1;
-		}
-		break;
-	default:
-		break;
+	}
+}
+
+#ifdef HOST
+ISR(USART1_TXC_vect)
+#else
+ISR(USART_TXC_vect)
+#endif
+{
+	if (state == SEND_DONE) {
+		finish_send();
 	}
 }
 
@@ -171,19 +188,20 @@ ISR(USART_UDRE_vect)
 {
 	switch(state) {
 	case SEND_START1:
-		write_byte(START2);
+		write_byte(START1);
 		state = SEND_START2;
 		break;
 	case SEND_START2:
-		write_byte(send_cmd);
+		write_byte(START2);
 		state = SEND_CMD;
 		break;
 	case SEND_CMD:
-		write_byte(255 - send_cmd);
+		write_byte(send_cmd);
 		state = SEND_CHK;
 		break;
 	case SEND_CHK:
-		finish_send();
+		write_byte(255 - send_cmd);
+		state = SEND_DONE;
 		break;
 	default:
 		break;

@@ -28,6 +28,7 @@
 #include	"timer.h"
 #include	"dda.h"
 #include	"sersendf.h"
+#include	"intercom.h"
 #include	"debug.h"
 
 uint16_t	current_temp = 0;
@@ -87,45 +88,7 @@ void temp_save_settings() {
 }
 
 uint16_t temp_read() {
-	uint16_t temp;
-
-	SPCR = MASK(MSTR) | MASK(SPE) | MASK(SPR0);
-
-	// enable MAX6675
-	WRITE(SS, 0);
-
-	// ensure 100ns delay - a bit extra is fine
-	delay(1);
-
-	// read MSB
-	SPDR = 0;
-	for (;(SPSR & MASK(SPIF)) == 0;);
-	temp = SPDR;
-	temp <<= 8;
-
-	// read LSB
-	SPDR = 0;
-	for (;(SPSR & MASK(SPIF)) == 0;);
-	temp |= SPDR;
-
-	// disable MAX6675
-	WRITE(SS, 1);
-
-	temp_flags = 0;
-	if ((temp & 0x8002) == 0) {
-		// got "device id"
-		temp_flags |= TEMP_FLAG_PRESENT;
-		if (temp & 4) {
-			// thermocouple open
-			temp_flags |= TEMP_FLAG_TCOPEN;
-		}
-		else {
-			current_temp = temp >> 3;
-			return current_temp;
-		}
-	}
-
-	return 0;
+	return get_read_cmd() << 2;
 }
 
 void temp_set(uint16_t t) {
@@ -221,7 +184,8 @@ void temp_tick() {
 			sersendf_P(PSTR("T{E:%d, P:%d * %ld = %ld / I:%d * %ld = %ld / D:%d * %ld = %ld # O: %ld = %u}\n"), t_error, heater_p, p_factor, (int32_t) heater_p * p_factor / PID_SCALE, heater_i, i_factor, (int32_t) heater_i * i_factor / PID_SCALE, heater_d, d_factor, (int32_t) heater_d * d_factor / PID_SCALE, pid_output_intermed, pid_output);
 
 		#ifdef	HEATER_PWM
-			HEATER_PWM = pid_output;
+			//HEATER_PWM = pid_output;
+			update_send_cmd(pid_output);
 		#else
 			if (pid_output >= 8)
 				enable_heater();
