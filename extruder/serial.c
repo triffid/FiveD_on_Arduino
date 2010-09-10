@@ -1,5 +1,6 @@
 #include	"serial.h"
 
+#include	"ringbuffer.h"
 #include	"arduino.h"
 
 #define		BUFSIZE			256

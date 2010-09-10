@@ -14,7 +14,7 @@
 
 PROGRAM = extruder
 
-SOURCES = $(PROGRAM).c 
+SOURCES = $(PROGRAM).c serial.c watchdog.c timer.c analog.c 
 
 ##############################################################################
 #                                                                            #
@@ -22,7 +22,7 @@ SOURCES = $(PROGRAM).c
 #                                                                            #
 ##############################################################################
 
-MCU_TARGET = atmega168p
+MCU_TARGET = atmega168
 F_CPU = 16000000L
 
 ##############################################################################
@@ -76,8 +76,8 @@ clean:
 
 size: $(PROGRAM).hex
 	@echo "  SIZE                   Atmega168        Atmega328p"
-	@$(OBJDUMP) -h mendel.elf | perl -ne '/.(text)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    FLASH: %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (14 * 1024), 14, $$a * 100 / (30 * 1024), 30 }'
-	@$(OBJDUMP) -h mendel.elf | perl -ne '/.(data|bss)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    RAM  : %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (1 * 1024), 1, $$a * 100 / (2 * 1024), 2 }'
+	@$(OBJDUMP) -h $(PROGRAM).elf | perl -ne '/.(text)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    FLASH: %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (14 * 1024), 14, $$a * 100 / (30 * 1024), 30 }'
+	@$(OBJDUMP) -h $(PROGRAM).elf | perl -ne '/.(data|bss)\s+([0-9a-f]+)/ && do { $$a += eval "0x$$2" }; END { printf "    RAM  : %5d bytes  (%2d%% of %2dkb)    (%2d%% of %2dkb)\n", $$a, $$a * 100 / (1 * 1024), 1, $$a * 100 / (2 * 1024), 2 }'
 
 %.o: %.c
 	@echo "  CC        $@"

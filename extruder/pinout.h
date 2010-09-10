@@ -15,12 +15,14 @@
 
 //Trimpot is on AIO0, pin 23
 #define TRIM_POT AIO0
+#define TRIM_POT_CHANNEL 0
 
 //Debug LED will blink on RS485 transmission
 #define DEBUG_LED DIO13
 
 //Read analog voltage from thermistor
 #define TEMP_PIN AIO3
+#define TEMP_PIN_CHANNEL 3
 
 // list of PWM-able pins and corresponding timers
 // timer1 is used for step timing so don't use OC1A/OC1B (DIO9/DIO10)

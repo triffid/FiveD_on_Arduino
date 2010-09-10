@@ -6,32 +6,27 @@
 #include	<avr/interrupt.h>
 
 #include "pinout.h"
+#include "timer.h"
+#include "serial.h"
+#include "analog.h"
+#include "watchdog.h"
 
 void io_init(void) {
-	// disable modules we don't use
-	PRR = MASK(PRTWI);
-	ACSR = MASK(ACD);
+
 
 	// setup I/O pins
-	WRITE(X_STEP_PIN, 0);	SET_OUTPUT(X_STEP_PIN);
-	WRITE(X_DIR_PIN,  0);	SET_OUTPUT(X_DIR_PIN);
-	WRITE(X_MIN_PIN,  1);	SET_INPUT(X_MIN_PIN);
+	WRITE(DEBUG_LED, 0); SET_OUTPUT(DEBUG_LED);
+	WRITE(H1D,0); SET_OUTPUT(H1D);
+	WRITE(H1E,0); SET_OUTPUT(H1E);
+	WRITE(H2D,0); SET_OUTPUT(H2D);
+	WRITE(H2E,0); SET_OUTPUT(H2E);
 
-	WRITE(Y_STEP_PIN, 0);	SET_OUTPUT(Y_STEP_PIN);
-	WRITE(Y_DIR_PIN,  0);	SET_OUTPUT(Y_DIR_PIN);
-	WRITE(Y_MIN_PIN,  1);	SET_INPUT(Y_MIN_PIN);
-
-	WRITE(Z_STEP_PIN, 0);	SET_OUTPUT(Z_STEP_PIN);
-	WRITE(Z_DIR_PIN,  0);	SET_OUTPUT(Z_DIR_PIN);
-	WRITE(Z_MIN_PIN,  1);	SET_INPUT(Z_MIN_PIN);
-
-	WRITE(E_STEP_PIN, 0);	SET_OUTPUT(E_STEP_PIN);
-	WRITE(E_DIR_PIN,  0);	SET_OUTPUT(E_DIR_PIN);
+	SET_INPUT(TRIM_POT);
+	SET_INPUT(TEMP_PIN);
 
 	#ifdef	HEATER_PIN
 		WRITE(HEATER_PIN, 0); SET_OUTPUT(HEATER_PIN);
 	#endif
-
 
 	#if defined(HEATER_PWM) || defined(FAN_PWM)
 		// setup PWM timer: fast PWM, no prescaler
@@ -50,6 +45,9 @@ void init(void) {
 	// set up watchdog
 	wd_init();
 
+	// setup analog reading
+	analog_init();
+
 	// set up serial
 	serial_init();
 
@@ -63,26 +61,32 @@ void init(void) {
 	wd_reset();
 }
 
-void clock_250ms(void) {
-	// reset watchdog
-	wd_reset();
-}
-
 int main (void)
 {
 	init();
 
+
+
 	// main loop
 	for (;;)
 	{
+		wd_reset();
+		enable_heater();
+
+		uint16_t trim = analog_read(TRIM_POT_CHANNEL);
+		//Test the trim pot and pwm output
+		HEATER_PWM = trim >> 2;
+
+		if (trim > 800) WRITE(DEBUG_LED,1);
+		else              WRITE(DEBUG_LED,0);
+
+
 		// if queue is full, no point in reading chars- host will just have to wait
 		/*if ((serial_rxchars() != 0) && (queue_full() == 0)) {
 			uint8_t c = serial_popchar();
 			scan_char(c);
 		}*/
 
-		ifclock(CLOCK_FLAG_250MS) {
-			clock_250ms();
-		}
+	
 	}
 }
