@@ -33,7 +33,7 @@
 #define	SEARCH_FEEDRATE_E	50
 
 // extruder settings
-#define	TEMP_HYSTERESIS		20
+#define	TEMP_HYSTERESIS		35
 #define	TEMP_RESIDENCY_TIME	60
 
 // --------------------------------------------------------------------------
