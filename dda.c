@@ -120,6 +120,7 @@ void dda_create(DDA *dda, TARGET *target) {
 
 	// initialise DDA to a known state
 	dda->live = 0;
+	dda->nullmove = 0;
 	dda->waitfor_temp = 0;
 
 	if (debug_flags & DEBUG_DDA)
@@ -180,6 +181,10 @@ void dda_create(DDA *dda, TARGET *target) {
 	if (dda->z_delta > 0 ) {	
 		if (startpoint.F > MAXIMUM_FEEDRATE_Z) startpoint.F = MAXIMUM_FEEDRATE_Z;
 		if (target->F > MAXIMUM_FEEDRATE_Z) target->F = MAXIMUM_FEEDRATE_Z;
+	}
+	else if (startpoint.F <= MAXIMUM_FEEDRATE_Z && target->F > MAXIMUM_FEEDRATE_Z) {
+		//Disable acceleration relating to Z moves
+		startpoint.F = target->F;
 	}
 
 
@@ -325,6 +330,12 @@ void dda_start(DDA *dda) {
 			y_direction(dda->y_direction);
 			z_direction(dda->z_direction);
 			e_direction(dda->e_direction);
+
+			//Disable the z if we aren't using it
+			if (dda->z_delta == 0)
+				WRITE(Z_ENABLE_PIN,1);
+			else
+				WRITE(Z_ENABLE_PIN,0);
 		}
 
 		// ensure this dda starts

@@ -161,7 +161,7 @@
 	#define	power_on()					do { WRITE(STEPPER_ENABLE_PIN, 0); SET_OUTPUT(STEPPER_ENABLE_PIN); } while (0)
 	#define	power_off()					SET_INPUT(STEPPER_ENABLE_PIN)
 #elif defined(X_ENABLE_PIN) && defined(Y_ENABLE_PIN) && defined(Z_ENABLE_PIN)
-	#define	power_on()					do { WRITE(X_ENABLE_PIN, 0); SET_OUTPUT(X_ENABLE_PIN); WRITE(Y_ENABLE_PIN, 0); SET_OUTPUT(Y_ENABLE_PIN); WRITE(Z_ENABLE_PIN, 0); SET_OUTPUT(Z_ENABLE_PIN); } while (0)
+	#define	power_on()					do { WRITE(X_ENABLE_PIN, 0); SET_OUTPUT(X_ENABLE_PIN); WRITE(Y_ENABLE_PIN, 0); SET_OUTPUT(Y_ENABLE_PIN); SET_OUTPUT(Z_ENABLE_PIN); } while (0)
 	#define	power_off()					do { SET_INPUT(X_ENABLE_PIN); SET_INPUT(Y_ENABLE_PIN); SET_INPUT(Z_ENABLE_PIN);  } while (0)
 #else
 	#define	power_on()					if (0) {}

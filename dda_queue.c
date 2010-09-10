@@ -29,7 +29,6 @@ void queue_step() {
 		if (movebuffer[mb_tail].waitfor_temp) {
 			if (temp_achieved()) {
 				movebuffer[mb_tail].live = movebuffer[mb_tail].waitfor_temp = 0;
-				serial_writestr_P(PSTR("Temp achieved\n"));
 			}
 
 			#if STEP_INTERRUPT_INTERRUPTIBLE

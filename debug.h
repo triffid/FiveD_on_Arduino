@@ -3,6 +3,8 @@
 
 #include	<stdint.h>
 
+//#define DEBUG
+
 #ifdef	DEBUG
 	#define		DEBUG_PID				1
 	#define		DEBUG_DDA				2

@@ -523,25 +523,25 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 		switch (gcmd->M) {
 			// M101- extruder on
 			case 101:
-				if (temp_achieved() == 0) {
-// 					serial_writestr_P(PSTR("Waiting for extruder to reach target temperature\n"));
-// 					// here we wait until target temperature is reached, and emulate main loop so the temperature can actually be updated
-// 					while (temp_achieved() == 0) {
-// 						ifclock(CLOCK_FLAG_250MS) {
-// 							// this is cosmetically nasty, but exactly what needs to happen
-// 							void clock_250ms(void);
-// 							clock_250ms();
-// 						}
-// 					}
-					enqueue_temp_wait();
-				}
-				do {
-					// backup feedrate, move E very quickly then restore feedrate
-					uint32_t	f = startpoint.F;
-					startpoint.F = MAXIMUM_FEEDRATE_E;
-					SpecialMoveE(E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
-					startpoint.F = f;
-				} while (0);
+//				if (temp_achieved() == 0) {
+//// 					serial_writestr_P(PSTR("Waiting for extruder to reach target temperature\n"));
+//// 					// here we wait until target temperature is reached, and emulate main loop so the temperature can actually be updated
+//// 					while (temp_achieved() == 0) {
+//// 						ifclock(CLOCK_FLAG_250MS) {
+//// 							// this is cosmetically nasty, but exactly what needs to happen
+//// 							void clock_250ms(void);
+//// 							clock_250ms();
+//// 						}
+//// 					}
+//					enqueue_temp_wait();
+//				}
+//				do {
+//					// backup feedrate, move E very quickly then restore feedrate
+//					uint32_t	f = startpoint.F;
+//					startpoint.F = MAXIMUM_FEEDRATE_E;
+//					SpecialMoveE(E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
+//					startpoint.F = f;
+//				} while (0);
 				break;
 
 			// M102- extruder reverse
