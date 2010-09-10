@@ -147,8 +147,8 @@ void clock_250ms(void) {
 			print_queue();
 		}
 		// temperature
-		//if (temp_get_target())
-		//	temp_print();
+		if (temp_get_target())
+			temp_print();
 	}
 }
 

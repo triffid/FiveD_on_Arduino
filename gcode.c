@@ -535,26 +535,26 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 //// 					}
 //					enqueue_temp_wait();
 //				}
-//				do {
-//					// backup feedrate, move E very quickly then restore feedrate
-//					uint32_t	f = startpoint.F;
-//					startpoint.F = MAXIMUM_FEEDRATE_E;
-//					SpecialMoveE(E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
-//					startpoint.F = f;
-//				} while (0);
+//				//do {
+//				//	// backup feedrate, move E very quickly then restore feedrate
+//				//	uint32_t	f = startpoint.F;
+//				//	startpoint.F = MAXIMUM_FEEDRATE_E;
+//				//	SpecialMoveE(E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
+//				//	startpoint.F = f;
+//				//} while (0);
 				break;
 
 			// M102- extruder reverse
 
 			// M103- extruder off
 			case 103:
-				do {
-					// backup feedrate, move E very quickly then restore feedrate
-					uint32_t	f = startpoint.F;
-					startpoint.F = MAXIMUM_FEEDRATE_E;
-					SpecialMoveE(-E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
-					startpoint.F = f;
-				} while (0);
+				//do {
+				//	// backup feedrate, move E very quickly then restore feedrate
+				//	uint32_t	f = startpoint.F;
+				//	startpoint.F = MAXIMUM_FEEDRATE_E;
+				//	SpecialMoveE(-E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
+				//	startpoint.F = f;
+				//} while (0);
 				break;
 
 			// M104- set temperature

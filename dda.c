@@ -179,8 +179,8 @@ void dda_create(DDA *dda, TARGET *target) {
 	}
 
 	if (dda->z_delta > 0 ) {	
-		if (startpoint.F > MAXIMUM_FEEDRATE_Z) startpoint.F = MAXIMUM_FEEDRATE_Z;
-		if (target->F > MAXIMUM_FEEDRATE_Z) target->F = MAXIMUM_FEEDRATE_Z;
+		if (startpoint.F > SEARCH_FEEDRATE_Z) startpoint.F = SEARCH_FEEDRATE_Z;
+		if (target->F > SEARCH_FEEDRATE_Z) target->F = SEARCH_FEEDRATE_Z;
 	}
 	else if (startpoint.F <= MAXIMUM_FEEDRATE_Z && target->F > MAXIMUM_FEEDRATE_Z) {
 		//Disable acceleration relating to Z moves

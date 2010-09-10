@@ -23,7 +23,7 @@
 // used for G0 rapid moves and as a cap for all other feedrates
 #define	MAXIMUM_FEEDRATE_X	6000
 #define	MAXIMUM_FEEDRATE_Y	6000
-#define	MAXIMUM_FEEDRATE_Z	50
+#define	MAXIMUM_FEEDRATE_Z	100
 #define	MAXIMUM_FEEDRATE_E	6000
 
 // used when searching endstops and similar
@@ -68,7 +68,7 @@
 		note that each move takes a fair chunk of ram (69 bytes as of this writing) so don't make the buffer too big - a bigger serial readbuffer may help more than increasing this unless your gcodes are more than 70 characters long on average.
 		however, a larger movebuffer will probably help with lots of short consecutive moves, as each move takes a bunch of math (hence time) to set up
 */
-#define	MOVEBUFFER_SIZE	4
+#define	MOVEBUFFER_SIZE	32
 
 /*
 */
