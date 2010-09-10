@@ -14,7 +14,7 @@
 
 PROGRAM = extruder
 
-SOURCES = $(PROGRAM).c serial.c watchdog.c timer.c analog.c 
+SOURCES = $(PROGRAM).c intercom.c watchdog.c timer.c analog.c
 
 ##############################################################################
 #                                                                            #

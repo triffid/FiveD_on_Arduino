@@ -7,13 +7,37 @@
 
 #include "pinout.h"
 #include "timer.h"
-#include "serial.h"
+#include "intercom.h"
 #include "analog.h"
 #include "watchdog.h"
 
+static uint8_t motor_pwm;
+
+#define NUMTEMPS 20
+short temptable[NUMTEMPS][2] = {
+   {1, 841},
+   {54, 255},
+   {107, 209},
+   {160, 184},
+   {213, 166},
+   {266, 153},
+   {319, 142},
+   {372, 132},
+   {425, 124},
+   {478, 116},
+   {531, 108},
+   {584, 101},
+   {637, 93},
+   {690, 86},
+   {743, 78},
+   {796, 70},
+   {849, 61},
+   {902, 50},
+   {955, 34},
+   {1008, 3}
+};
+
 void io_init(void) {
-
-
 	// setup I/O pins
 	WRITE(DEBUG_LED, 0); SET_OUTPUT(DEBUG_LED);
 	WRITE(H1D,0); SET_OUTPUT(H1D);
@@ -23,6 +47,14 @@ void io_init(void) {
 
 	SET_INPUT(TRIM_POT);
 	SET_INPUT(TEMP_PIN);
+	SET_INPUT(E_STEP_PIN);
+	SET_INPUT(E_DIR_PIN);
+
+	//Enable the RS485 transceiver
+	WRITE(RX_ENABLE_PIN, 1);
+	SET_OUTPUT(RX_ENABLE_PIN);
+	WRITE(TX_ENABLE_PIN, 0);
+	SET_OUTPUT(TX_ENABLE_PIN);
 
 	#ifdef	HEATER_PIN
 		WRITE(HEATER_PIN, 0); SET_OUTPUT(HEATER_PIN);
@@ -37,7 +69,98 @@ void io_init(void) {
 		OCR2B = 255;
 	#endif
 
+	#if defined(H1E_PWM) && defined(H2E_PWM)
+		TCCR0A = MASK(WGM01) | MASK(WGM00);
+		TCCR0B = MASK(CS20);
+		TIMSK0 = 0;
+		OCR0A = 0;
+		OCR0B = 0;
+	#endif
+}
 
+void motor_init(void) {
+	//Enable an interrupt to be triggered when the step pin changes
+	//This will be PCIE0
+	PCICR = MASK(PCIE0);
+	PCMSK0 = MASK(PCINT2);
+}
+
+ISR(PCINT0_vect) {
+	static uint8_t debug, coil_pos, pwm, flag;
+
+	if (flag == 1) flag = 0;
+	else flag = 1;
+		
+	//if the step pin is high, we advance the motor
+	if (flag) {
+		WRITE(DEBUG_LED,debug);
+		debug ^= 1;
+
+		//Turn on motors only on first tick to save power I guess
+		enable_motors();
+
+		//Advance the coil position
+		if (READ(E_DIR_PIN)) 
+			coil_pos++;
+		else
+			coil_pos--;
+
+		coil_pos &= 7;
+
+		//Grab the latest motor power to use
+		pwm = motor_pwm;
+
+		switch(coil_pos) {
+			case 0:
+			  WRITE(H1D, 0);
+			  WRITE(H2D, 0);
+			  H1E_PWM = 0;
+			  H2E_PWM = pwm;
+			  break;
+			case 1:
+			  WRITE(H1D, 1);
+			  WRITE(H2D, 0);
+			  H1E_PWM = pwm;
+			  H2E_PWM = pwm;
+			  break;
+			case 2:
+			  WRITE(H1D, 1);
+			  WRITE(H2D, 0);
+			  H1E_PWM = pwm;
+			  H2E_PWM = 0;
+			  break;
+			case 3:
+			  WRITE(H1D, 1);
+			  WRITE(H2D, 1);
+			  H1E_PWM = pwm;
+			  H2E_PWM = pwm;
+			  break;
+			case 4:
+			  WRITE(H1D, 1);
+			  WRITE(H2D, 1);
+			  H1E_PWM = 0;
+			  H2E_PWM = pwm;  
+			  break;
+			case 5:
+			  WRITE(H1D, 0);
+			  WRITE(H2D, 1);
+			  H1E_PWM = pwm;
+			  H2E_PWM = pwm;  
+			  break;
+			case 6:
+			  WRITE(H1D, 0);
+			  WRITE(H2D, 1);
+			  H1E_PWM = pwm;
+			  H2E_PWM = 0;  
+			  break;
+			case 7:
+			  WRITE(H1D, 0);
+			  WRITE(H2D, 0);
+			  H1E_PWM = pwm;
+			  H2E_PWM = pwm;  
+			  break;
+		}
+	}
 }
 
 void init(void) {
@@ -49,10 +172,13 @@ void init(void) {
 	analog_init();
 
 	// set up serial
-	serial_init();
+	intercom_init();
 
 	// set up inputs and outputs
 	io_init();
+
+	// set up extruder motor driver
+	motor_init();
 
 	// enable interrupts
 	sei();
@@ -61,32 +187,43 @@ void init(void) {
 	wd_reset();
 }
 
+
 int main (void)
 {
+	static uint8_t i;
+	static uint16_t raw_temp;
+
 	init();
 
-
+	enable_heater();
 
 	// main loop
 	for (;;)
 	{
 		wd_reset();
-		enable_heater();
 
-		uint16_t trim = analog_read(TRIM_POT_CHANNEL);
-		//Test the trim pot and pwm output
-		HEATER_PWM = trim >> 2;
+		//Read motor PWM
+		motor_pwm = analog_read(TRIM_POT_CHANNEL) >> 2;
 
-		if (trim > 800) WRITE(DEBUG_LED,1);
-		else              WRITE(DEBUG_LED,0);
+		//Read current temperature
+		raw_temp = analog_read(TEMP_PIN_CHANNEL);
 
+		//Calculate real temperature based on lookup table
+		for (i = 1; i < NUMTEMPS; i++) {
+			if (temptable[i][0] > raw_temp) {
+				raw_temp = temptable[i-1][1] + 
+						   (raw_temp - temptable[i-1][0]) *  (temptable[i][1] - temptable[i-1][1]) /  (temptable[i][0] - temptable[i-1][0]);
 
-		// if queue is full, no point in reading chars- host will just have to wait
-		/*if ((serial_rxchars() != 0) && (queue_full() == 0)) {
-			uint8_t c = serial_popchar();
-			scan_char(c);
-		}*/
+				break;
+			}
+		}
 
-	
+		//Clamp for overflows
+		if (i == NUMTEMPS) raw_temp = temptable[NUMTEMPS-1][1];
+		if (raw_temp > 255) raw_temp = 255;
+
+		//Update the intercom values
+		update_send_cmd(raw_temp);
+		HEATER_PWM = get_read_cmd();
 	}
 }

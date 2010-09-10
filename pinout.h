@@ -61,6 +61,10 @@
 #define	FAN_PIN								DIO5
 #define	FAN_PWM								OCR0B
 
+//RS485 Interface pins
+#define RX_ENABLE_PIN DIO13
+#define TX_ENABLE_PIN DIO12
+
 /*
 	X Stepper
 */
@@ -110,6 +114,12 @@
 #define	_e_step(st)						WRITE(E_STEP_PIN, st)
 #define	e_step()							_e_step(1);
 #define	e_direction(dir)			WRITE(E_DIR_PIN, dir)
+
+/*
+	Intercom
+*/
+#define enable_transmit()			do { WRITE(TX_ENABLE_PIN,1);  WRITE(RX_ENABLE_PIN,0); } while(0)
+#define disable_transmit()			do { WRITE(TX_ENABLE_PIN,0);  WRITE(RX_ENABLE_PIN,1);} while(0)
 
 /*
 	Heater

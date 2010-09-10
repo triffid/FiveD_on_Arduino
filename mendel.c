@@ -140,6 +140,8 @@ int main (void)
 {
 	init();
 
+	sersendf_P(PSTR("Hello Mendel"));
+
 	// main loop
 	for (;;)
 	{

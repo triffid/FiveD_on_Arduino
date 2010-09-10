@@ -1,3 +1,4 @@
+
 #ifndef	_PINOUT_H
 #define	_PINOUT_H
 
@@ -12,6 +13,15 @@
 #define H1E DIO5
 #define H2D DIO8
 #define H2E DIO6
+
+// PWM versions of the enable_pins
+#define H1E_PWM OCR0B
+#define H2E_PWM OCR0A
+
+//Step/Dir Pins from motherboard to extruder 
+//IMPORTANT: Assumes that the step pin is on PCIE0
+#define E_STEP_PIN DIO10
+#define E_DIR_PIN DIO9
 
 //Trimpot is on AIO0, pin 23
 #define TRIM_POT AIO0
@@ -35,6 +45,19 @@
 
 #define	HEATER_PIN						DIO11
 #define	HEATER_PWM						OCR2A
+
+/*
+	Intercom
+*/
+#define enable_transmit()			do { WRITE(TX_ENABLE_PIN,1);  WRITE(RX_ENABLE_PIN,0); } while(0)
+#define disable_transmit()			do { WRITE(TX_ENABLE_PIN,0);  WRITE(RX_ENABLE_PIN,1);} while(0)
+
+/*
+	Motors
+*/
+
+#define enable_motors()				do { TCCR0A |= MASK(COM0A1) | MASK(COM0B1); } while (0)
+#define disable_motors()			do { TCCR0A &= ~MASK(COM0A1) & ~MASK(COM0B1); } while (0)
 
 /*
 	Heater
