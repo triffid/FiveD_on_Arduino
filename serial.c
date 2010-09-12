@@ -2,6 +2,8 @@
 
 #include	"arduino.h"
 
+#include	<avr/interrupt.h>
+
 #define		BUFSIZE			128
 #define		BAUD			115200
 
