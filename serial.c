@@ -1,8 +1,8 @@
 #include	"serial.h"
 
-#include	"arduino.h"
-
 #include	<avr/interrupt.h>
+
+#include	"arduino.h"
 
 #define		BUFSIZE			128
 #define		BAUD			115200
@@ -46,22 +46,21 @@ volatile uint8_t txbuf[BUFSIZE];
 	data = buf[tail++]; tail &= (BUFSIZE - 1);
 */
 
-volatile uint8_t flowflags = 0;
-#define		FLOWFLAG_SEND_XOFF	1
-#define		FLOWFLAG_SEND_XON		2
-#define		FLOWFLAG_SENT_XOFF	4
-#define		FLOWFLAG_SENT_XON		8
+#ifdef	XONXOFF
+#define		FLOWFLAG_SEND_XON		1
+#define		FLOWFLAG_SEND_XOFF	2
+#define		FLOWFLAG_STATE_XON	4
+// initially, send an XON
+volatile uint8_t flowflags = FLOWFLAG_SEND_XON;
+#endif
 
 void serial_init()
 {
 #if BAUD > 38401
 	UCSR0A = MASK(U2X0);
-#else
-	UCSR0A = 0;
-#endif
-#if BAUD > 38401
 	UBRR0 = (((F_CPU / 8) / BAUD) - 0.5);
 #else
+	UCSR0A = 0;
 	UBRR0 = (((F_CPU / 16) / BAUD) - 0.5);
 #endif
 
@@ -83,14 +82,14 @@ ISR(USART0_RX_vect)
 
 ISR(USART0_UDRE_vect)
 {
-	#if XONXOFF
-	if (flowflags & FLOWFLAG_SEND_XOFF) {
-		UDR0 = ASCII_XOFF;
-		flowflags = (flowflags & ~FLOWFLAG_SEND_XOFF) | FLOWFLAG_SENT_XOFF;
-	}
-	else if (flowflags & FLOWFLAG_SEND_XON) {
+	#ifdef	XONXOFF
+	if (flowflags & FLOWFLAG_SEND_XON) {
 		UDR0 = ASCII_XON;
-		flowflags = (flowflags & ~FLOWFLAG_SEND_XON) | FLOWFLAG_SENT_XON;
+		flowflags = FLOWFLAG_STATE_XON;
+	}
+	else if (flowflags & FLOWFLAG_SEND_XOFF) {
+		UDR0 = ASCII_XOFF;
+		flowflags = 0;
 	}
 	else
 	#endif
@@ -122,11 +121,6 @@ uint8_t serial_popchar()
 	Write
 */
 
-// uint8_t serial_txchars()
-// {
-// 	return buf_canwrite(tx);
-// }
-
 void serial_writechar(uint8_t data)
 {
 	// check if interrupts are enabled
@@ -157,7 +151,6 @@ void serial_writestr(uint8_t *data)
 {
 	uint8_t i = 0, r;
 	// yes, this is *supposed* to be assignment rather than comparison, so we break when r is assigned zero
-// 	for (uint8_t r; (r = data[i]); i++)
 	while ((r = data[i++]))
 		serial_writechar(r);
 }
@@ -185,21 +178,32 @@ void serial_writestr_P(PGM_P data)
 {
 	uint8_t r, i = 0;
 	// yes, this is *supposed* to be assignment rather than comparison, so we break when r is assigned zero
-	for ( ; (r = pgm_read_byte(&data[i])); i++)
+	while ((r = pgm_read_byte(&data[i++])))
 		serial_writechar(r);
 }
 
 #ifdef	XONXOFF
-	void xon() {
-		if (flowflags & FLOWFLAG_SENT_XOFF)
-			flowflags = FLOWFLAG_SEND_XON;
-		// enable TX interrupt so we can send this character
-		UCSR0B |= MASK(UDRIE0);
-	}
+void xon() {
+	// disable TX interrupt
+	UCSR0B &= ~MASK(UDRIE0);
 
-	void xoff() {
-		flowflags = FLOWFLAG_SEND_XOFF;
-		// enable TX interrupt so we can send this character
-		UCSR0B |= MASK(UDRIE0);
-	}
+	if ((flowflags & FLOWFLAG_STATE_XON) == 0)
+		flowflags = FLOWFLAG_SEND_XON;
+	else
+		flowflags = FLOWFLAG_STATE_XON;	// purge a possible FLOWFLAG_SEND_XOFF
+
+	// enable TX interrupt so we can send this character
+	UCSR0B |= MASK(UDRIE0);
+}
+
+void xoff() {
+	UCSR0B &= ~MASK(UDRIE0);
+
+	if (flowflags & FLOWFLAG_STATE_XON)
+		flowflags = FLOWFLAG_SEND_XOFF | FLOWFLAG_STATE_XON;
+	else
+		flowflags = 0;
+
+	UCSR0B |= MASK(UDRIE0);
+}
 #endif

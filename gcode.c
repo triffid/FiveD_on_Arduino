@@ -12,6 +12,7 @@
 #include	"clock.h"
 #include	"watchdog.h"
 #include	"debug.h"
+#include	"heater.h"
 
 uint8_t last_field = 0;
 
@@ -210,7 +211,7 @@ void scan_char(uint8_t c) {
 	}
 
 	// skip comments
-	if (next_target.seen_comment == 0) {
+	if (next_target.seen_semi_comment == 0 && next_target.seen_parens_comment == 0) {
 		// new field?
 		if ((c >= 'A' && c <= 'Z') || c == '*') {
 			last_field = c;
@@ -262,8 +263,11 @@ void scan_char(uint8_t c) {
 
 			// comments
 			case ';':
-				next_target.seen_comment = 1;
+				next_target.seen_semi_comment = 1;
 // 				option_bitfield |= OPTION_COMMENT;
+				break;
+			case '(':
+				next_target.seen_parens_comment = 1;
 				break;
 
 			// now for some numeracy
@@ -288,7 +292,9 @@ void scan_char(uint8_t c) {
 				}
 				// everything else is ignored
 		}
-	}
+	} else if ( next_target.seen_parens_comment == 1 && c == ')')
+		next_target.seen_parens_comment = 0; // recognize stuff after a (comment)
+
 
 	#ifndef ASTERISK_IN_CHECKSUM_INCLUDED
 	if (next_target.seen_checksum == 0)
@@ -348,8 +354,8 @@ void scan_char(uint8_t c) {
 			next_target.seen_E = next_target.seen_F = next_target.seen_G = \
 			next_target.seen_S = next_target.seen_P = next_target.seen_N = \
 			next_target.seen_M = next_target.seen_checksum = \
-			next_target.seen_comment = next_target.checksum_read = \
-			next_target.checksum_calculated = 0;
+			next_target.seen_semi_comment = next_target.seen_parens_comment = \
+			next_target.checksum_read = next_target.checksum_calculated = 0;
 		last_field = 0;
 		read_digit.sign = read_digit.mantissa = read_digit.exponent = 0;
 	}
@@ -397,6 +403,14 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			//	G1 - synchronised motion
 			case 1:
+				// check speeds here
+				if (gcmd->seen_Z) {
+					if (gcmd->target.F > MAXIMUM_FEEDRATE_Z)
+						gcmd->target.F = MAXIMUM_FEEDRATE_Z;
+				}
+				else if (gcmd->target.F > MAXIMUM_FEEDRATE_X)
+					gcmd->target.F = MAXIMUM_FEEDRATE_X;
+				
 				enqueue(&gcmd->target);
 				break;
 
@@ -409,7 +423,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			//	G4 - Dwell
 			case 4:
 				#ifdef	XONXOFF
-					xoff();
+				xoff();
 				#endif
 				// wait for all moves to complete
 				for (;queue_empty() == 0;)
@@ -417,7 +431,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				// delay
 				delay_ms(gcmd->P);
 				#ifdef	XONXOFF
-					xon();
+				xon();
 				#endif
 				break;
 
@@ -507,9 +521,9 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			//	G92 - set home
 			case 92:
 				startpoint.X = startpoint.Y = startpoint.Z = startpoint.E =
-				current_position.X = current_position.Y = current_position.Z = current_position.E = 0;
+					current_position.X = current_position.Y = current_position.Z = current_position.E = 0;
 				startpoint.F =
-				current_position.F = SEARCH_FEEDRATE_Z;
+					current_position.F = SEARCH_FEEDRATE_Z;
 				break;
 
 			// unknown gcode: spit an error
@@ -523,38 +537,33 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 		switch (gcmd->M) {
 			// M101- extruder on
 			case 101:
-//				if (temp_achieved() == 0) {
-//// 					serial_writestr_P(PSTR("Waiting for extruder to reach target temperature\n"));
-//// 					// here we wait until target temperature is reached, and emulate main loop so the temperature can actually be updated
-//// 					while (temp_achieved() == 0) {
-//// 						ifclock(CLOCK_FLAG_250MS) {
-//// 							// this is cosmetically nasty, but exactly what needs to happen
-//// 							void clock_250ms(void);
-//// 							clock_250ms();
-//// 						}
-//// 					}
-//					enqueue_temp_wait();
-//				}
-//				//do {
-//				//	// backup feedrate, move E very quickly then restore feedrate
-//				//	uint32_t	f = startpoint.F;
-//				//	startpoint.F = MAXIMUM_FEEDRATE_E;
-//				//	SpecialMoveE(E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
-//				//	startpoint.F = f;
-//				//} while (0);
+#ifdef ENABLE_EXTRUDER_COMMANDS
+				if (temp_achieved() == 0) {
+					enqueue_temp_wait();
+				}
+				do {
+					// backup feedrate, move E very quickly then restore feedrate
+					uint32_t	f = startpoint.F;
+					startpoint.F = MAXIMUM_FEEDRATE_E;
+					SpecialMoveE(E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
+					startpoint.F = f;
+				} while (0);
+#endif
 				break;
 
 			// M102- extruder reverse
 
 			// M103- extruder off
 			case 103:
-				//do {
-				//	// backup feedrate, move E very quickly then restore feedrate
-				//	uint32_t	f = startpoint.F;
-				//	startpoint.F = MAXIMUM_FEEDRATE_E;
-				//	SpecialMoveE(-E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
-				//	startpoint.F = f;
-				//} while (0);
+#ifdef ENABLE_EXTRUDER_COMMANDS
+				do {
+					// backup feedrate, move E very quickly then restore feedrate
+					uint32_t	f = startpoint.F;
+					startpoint.F = MAXIMUM_FEEDRATE_E;
+					SpecialMoveE(-E_STARTSTOP_STEPS, MAXIMUM_FEEDRATE_E);
+					startpoint.F = f;
+				} while (0);
+#endif
 				break;
 
 			// M104- set temperature
@@ -596,13 +605,6 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 					disable_heater();
 				}
 				enqueue_temp_wait();
-// 				while (!temp_achieved()) {
-// 					ifclock(CLOCK_FLAG_250MS) {
-// 						// this is cosmetically nasty, but exactly what needs to happen
-// 						void clock_250ms(void);
-// 						clock_250ms();
-// 					}
-// 				}
 				break;
 
 			// M110- set line number
@@ -622,6 +624,19 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				break;
 			// M113- extruder PWM
 			// M114- report XYZEF to host
+			case 114:
+				serial_writestr_P(PSTR("X:"));
+				serwrite_int32(current_position.X);
+				serial_writestr_P(PSTR(",Y:"));
+				serwrite_int32(current_position.Y);
+				serial_writestr_P(PSTR(",Z:"));
+				serwrite_int32(current_position.Z);
+				serial_writestr_P(PSTR(",E:"));
+				serwrite_int32(current_position.E);
+				serial_writestr_P(PSTR(",F:"));
+				serwrite_int32(current_position.F);
+				serial_writechar('\n');
+			 	break;
 
 			// M130- heater P factor
 			case 130:
@@ -645,7 +660,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				break;
 			// M134- save PID settings to eeprom
 			case 134:
-				temp_save_settings();
+				heater_save_settings();
 				break;
 
 			#ifdef	DEBUG
@@ -659,7 +674,6 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				debug_flags |= DEBUG_ECHO;
 				serial_writestr_P(PSTR("Echo on\n"));
 				break;
-			#endif
 
 			// DEBUG: return current position
 			case 250:
@@ -688,7 +702,11 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				serial_writestr_P(PSTR(",F:"));
 				serwrite_int32(movebuffer[mb_tail].endpoint.F);
 				serial_writestr_P(PSTR(",c:"));
+				#ifdef ACCELERATION_REPRAP
 				serwrite_uint32(movebuffer[mb_tail].end_c);
+				#else
+				serwrite_uint32(movebuffer[mb_tail].c);
+				#endif
 				serial_writestr_P(PSTR("}\n"));
 
 				print_queue();
@@ -715,6 +733,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				serial_writechar('\n');
 				(*(volatile uint8_t *)(gcmd->S)) = gcmd->P;
 				break;
+			#endif /* DEBUG */
 			// unknown mcode: spit an error
 			default:
 				serial_writestr_P(PSTR("E: Bad M-code "));

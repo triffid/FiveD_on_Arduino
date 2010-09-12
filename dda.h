@@ -7,6 +7,16 @@
 #include	"machine.h"
 
 /*
+	enums
+*/
+// wether we accelerate, run at full speed, break down, etc.
+typedef enum {
+	RAMP_UP,
+	RAMP_MAX,
+	RAMP_DOWN
+} ramp_state_t;
+
+/*
 	types
 */
 
@@ -29,7 +39,10 @@ typedef struct {
 			// status fields
 			uint8_t						nullmove			:1;
 			uint8_t						live					:1;
+
+			#ifdef ACCELERATION_REPRAP
 			uint8_t						accel					:1;
+			#endif
 
 			// wait for temperature to stabilise flag
 			uint8_t						waitfor_temp	:1;
@@ -60,8 +73,21 @@ typedef struct {
 
 	// linear acceleration variables: c and end_c are 24.8 fixed point timer values, n is the tracking variable
 	uint32_t					c;
+	#ifdef ACCELERATION_REPRAP
 	uint32_t					end_c;
 	int32_t						n;
+	#endif
+	#ifdef ACCELERATION_RAMPING
+	// start of down-ramp, intitalized with total_steps / 2
+	uint32_t					ramp_steps;
+	// counts actual steps done
+	uint32_t					step_no;
+	// 24.8 fixed point timer value, maximum speed
+	uint32_t					c_min;
+	// tracking variable
+	int32_t						n;
+	ramp_state_t			ramp_state;
+	#endif
 } DDA;
 
 /*

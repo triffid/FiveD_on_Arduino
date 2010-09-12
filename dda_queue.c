@@ -3,6 +3,7 @@
 #include	<string.h>
 #include	<avr/interrupt.h>
 
+#include	"machine.h" // for XONXOFF
 #include	"timer.h"
 #include	"serial.h"
 #include	"sermsg.h"
@@ -20,6 +21,10 @@ uint8_t queue_empty() {
 	return ((mb_tail == mb_head) && (movebuffer[mb_tail].live == 0))?255:0;
 }
 
+// -------------------------------------------------------
+// This is the one function called by the timer interrupt.
+// It calls a few other functions, though.
+// -------------------------------------------------------
 void queue_step() {
 	disableTimerInterrupt();
 
@@ -43,6 +48,7 @@ void queue_step() {
 // 	serial_writechar('!');
 
 	// fall directly into dda_start instead of waiting for another step
+	// the dda dies not directly after its last step, but when the timer fires and there's no steps to do
 	if (movebuffer[mb_tail].live == 0)
 		next_move();
 
@@ -59,19 +65,18 @@ void enqueue(TARGET *t) {
 	while (queue_full())
 		delay(WAITING_DELAY);
 
-	uint8_t h = mb_head;
-	h++;
-	if (h == MOVEBUFFER_SIZE)
-		h = 0;
+	uint8_t h = mb_head + 1;
+	h &= (MOVEBUFFER_SIZE - 1);
 
 	dda_create(&movebuffer[h], t);
 
 	mb_head = h;
 
 	#ifdef	XONXOFF
-		// if queue is full, stop transmition
-		if (queue_full())
-			xoff();
+	// If the queue has only two slots remaining, stop transmission. More
+	// characters might come in until the stop takes effect.
+	if (((mb_tail - mb_head - 1) & (MOVEBUFFER_SIZE - 1)) < (MOVEBUFFER_SIZE - 2))
+		xoff();
 	#endif
 
 	// fire up in case we're not running yet
@@ -84,9 +89,6 @@ void enqueue_temp_wait() {
 		delay(WAITING_DELAY);
 
 	uint8_t h = mb_head + 1;
-// 	h++;
-// 	if (h == MOVEBUFFER_SIZE)
-// 		h = 0;
 	h &= (MOVEBUFFER_SIZE - 1);
 
 	// wait for temp flag
@@ -103,9 +105,8 @@ void enqueue_temp_wait() {
 	mb_head = h;
 
 	#ifdef	XONXOFF
-		// if queue is full, stop transmition
-		if (queue_full())
-			xoff();
+	if (((mb_tail - mb_head - 1) & (MOVEBUFFER_SIZE - 1)) < (MOVEBUFFER_SIZE - 2))
+		xoff();
 	#endif
 
 	// fire up in case we're not running yet
@@ -116,17 +117,14 @@ void next_move() {
 	if (queue_empty() == 0) {
 		// next item
 		uint8_t t = mb_tail + 1;
-// 		t++;
-// 		if (t == MOVEBUFFER_SIZE)
-// 			t = 0;
 		t &= (MOVEBUFFER_SIZE - 1);
 		dda_start(&movebuffer[t]);
 		mb_tail = t;
 	}
 
 	#ifdef	XONXOFF
-		// restart transmission
-		xon();
+	// restart transmission
+	xon();
 	#endif
 }
 
