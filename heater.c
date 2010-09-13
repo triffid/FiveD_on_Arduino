@@ -7,15 +7,17 @@
 #include	"pinout.h"
 #include	"debug.h"
 #include	"arduino.h"
+#include	"intercom.h"
 
 int16_t		heater_p     = 0;
 int16_t		heater_i     = 0;
 int16_t		heater_d     = 0;
 
-#define		DEFAULT_P				8192
-#define		DEFAULT_I				512
+#define		DEFAULT_P				12000
+#define		DEFAULT_I				150
 #define		DEFAULT_D				-24576
 #define		DEFAULT_I_LIMIT	384
+
 int32_t		p_factor			= 0;
 int32_t		i_factor			= 0;
 int32_t		d_factor			= 0;
@@ -99,7 +101,7 @@ void heater_tick(int16_t current_temp, int16_t target_temp) {
 		sersendf_P(PSTR("T{E:%d, P:%d * %ld = %ld / I:%d * %ld = %ld / D:%d * %ld = %ld # O: %ld = %u}\n"), t_error, heater_p, p_factor, (int32_t) heater_p * p_factor / PID_SCALE, heater_i, i_factor, (int32_t) heater_i * i_factor / PID_SCALE, heater_d, d_factor, (int32_t) heater_d * d_factor / PID_SCALE, pid_output_intermed, pid_output);
 	
 	#ifdef	HEATER_PWM
-	HEATER_PWM = pid_output;
+		update_send_cmd(pid_output);
 	#else
 	if (pid_output >= 8)
 		enable_heater();

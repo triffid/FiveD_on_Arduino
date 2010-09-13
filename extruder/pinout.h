@@ -46,6 +46,8 @@
 #define	HEATER_PIN						DIO11
 #define	HEATER_PWM						OCR2A
 
+#define ANALOG_MASK	(MASK(TRIM_POT_CHANNEL) | MASK(TEMP_PIN_CHANNEL))
+
 /*
 	Intercom
 */
