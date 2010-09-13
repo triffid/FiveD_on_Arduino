@@ -50,5 +50,12 @@ ISR(ADC_vect) {
 }
 
 uint16_t	analog_read(uint8_t channel) {
-	return adc_result[channel];
+	static uint16_t temp;
+
+	//Must disable interrupts because writing to a 16 bit word is not atomic
+	cli();
+	temp = adc_result[channel];
+	sei();
+
+	return temp;
 }

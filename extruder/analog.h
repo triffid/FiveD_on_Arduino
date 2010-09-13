@@ -7,8 +7,14 @@
 #define	REFERENCE_AVCC	64
 #define	REFERENCE_1V1		192
 
-
 #define REFERENCE REFERENCE_AVCC
+
+#ifndef	REFERENCE
+#warning	define REFERENCE as one of
+#warning	REFERENCE_AREF, REFERENCE_AVCC or REFERENCE_1V1
+#warning	in your machine.h
+#error REFERENCE undefined
+#endif
 
 void 			analog_init(void);
 uint16_t	analog_read(uint8_t channel);
