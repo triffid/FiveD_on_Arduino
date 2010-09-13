@@ -162,31 +162,31 @@ void dda_create(DDA *dda, TARGET *target) {
 	if (dda->e_delta > dda->total_steps)
 		dda->total_steps = dda->e_delta;
 
-	//The Z feedrate is typically lower than the X/Y Feedrate, to make things work,
-	//be sure to cap the feedrates
-	//Because of the acceleration techniques used, cap both the start and end so we never go beyond our max feedrates
+	// check speeds here, once we know what the deltas are
+	// if we check them when the gcodes come in, just getting a Z in the gcode doesn't mean there
+	// is a z delta on that move
+	if (dda->z_counter > 0) {
+		if (target->F > MAXIMUM_FEEDRATE_Z)
+			target->F = MAXIMUM_FEEDRATE_Z;
 
-	if (dda->x_delta > 0 ) {	
-		if (startpoint.F > MAXIMUM_FEEDRATE_X) startpoint.F = MAXIMUM_FEEDRATE_X;
-		if (target->F > MAXIMUM_FEEDRATE_X) target->F = MAXIMUM_FEEDRATE_X;
+		if (startpoint.F > MAXIMUM_FEEDRATE_Z)
+			startpoint.F = MAXIMUM_FEEDRATE_Z;
 	}
+	else
+	{
+		if (target->F > MAXIMUM_FEEDRATE_XYE)
+			target->F = MAXIMUM_FEEDRATE_XYE;
+		else if (target->F < MINIMUM_FEEDRATE_XYE) 
+			target->F = MINIMUM_FEEDRATE_XYE;
 
-	if (dda->y_delta > 0 ) {	
-		if (startpoint.F > MAXIMUM_FEEDRATE_Y) startpoint.F = MAXIMUM_FEEDRATE_Y;
-		if (target->F > MAXIMUM_FEEDRATE_Y) target->F = MAXIMUM_FEEDRATE_Y;
+		if (startpoint.F > MAXIMUM_FEEDRATE_XYE)
+			startpoint.F = MAXIMUM_FEEDRATE_XYE;
+		else if (startpoint.F < MINIMUM_FEEDRATE_XYE)
+			startpoint.F = MINIMUM_FEEDRATE_XYE;
 	}
+				
 
-	if (dda->z_delta > 0 ) {	
-		if (startpoint.F > SEARCH_FEEDRATE_Z) startpoint.F = SEARCH_FEEDRATE_Z;
-		if (target->F > SEARCH_FEEDRATE_Z) target->F = SEARCH_FEEDRATE_Z;
-	}
-	else if (startpoint.F <= MAXIMUM_FEEDRATE_Z && target->F > MAXIMUM_FEEDRATE_Z) {
-		//Disable acceleration relating to Z moves
-		startpoint.F = target->F;
-	}
-
-
-	if (debug_flags & DEBUG_DDA) {
+	if(debug_flags & DEBUG_DDA) {
 		serial_writestr_P(PSTR("ts:")); serwrite_uint32(dda->total_steps);
 	}
 

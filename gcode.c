@@ -397,20 +397,12 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// 	G0 - rapid, unsynchronised motion
 			// since it would be a major hassle to force the dda to not synchronise, just provide a fast feedrate and hope it's close enough to what host expects
 			case 0:
-				gcmd->target.F = MAXIMUM_FEEDRATE_X;
+				gcmd->target.F = MAXIMUM_FEEDRATE_XYE;
 				enqueue(&gcmd->target);
 				break;
 
 			//	G1 - synchronised motion
 			case 1:
-				// check speeds here
-				if (gcmd->seen_Z) {
-					if (gcmd->target.F > MAXIMUM_FEEDRATE_Z)
-						gcmd->target.F = MAXIMUM_FEEDRATE_Z;
-				}
-				else if (gcmd->target.F > MAXIMUM_FEEDRATE_X)
-					gcmd->target.F = MAXIMUM_FEEDRATE_X;
-				
 				enqueue(&gcmd->target);
 				break;
 
@@ -456,8 +448,8 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 					Home XY first
 				*/
 				// hit endstops, no acceleration- we don't care about skipped steps
-				startpoint.F = MAXIMUM_FEEDRATE_X;
-				SpecialMoveXY(-250L * STEPS_PER_MM_X, -250L * STEPS_PER_MM_Y, MAXIMUM_FEEDRATE_X);
+				startpoint.F = MAXIMUM_FEEDRATE_XYE;
+				SpecialMoveXY(-250L * STEPS_PER_MM_X, -250L * STEPS_PER_MM_Y, MAXIMUM_FEEDRATE_XYE);
 				startpoint.X = startpoint.Y = 0;
 
 				// move forward a bit

@@ -1,6 +1,8 @@
 #ifndef	_MACHINE_H
 #define	_MACHINE_H
 
+#define DEBUG
+
 // --------------------------------------------------------------------------
 // values reflecting the gearing of your machine
 // all numbers are integers, so no decimals, please :-)
@@ -21,10 +23,10 @@
 // again, all numbers are integers
 
 // used for G0 rapid moves and as a cap for all other feedrates
-#define	MAXIMUM_FEEDRATE_X	6000
-#define	MAXIMUM_FEEDRATE_Y	6000
-#define	MAXIMUM_FEEDRATE_Z	100
-#define	MAXIMUM_FEEDRATE_E	6000
+#define	MAXIMUM_FEEDRATE_XYE	6000
+#define	MAXIMUM_FEEDRATE_Z		100
+
+#define MINIMUM_FEEDRATE_XYE	200
 
 // used when searching endstops and similar
 #define	SEARCH_FEEDRATE_X	50
