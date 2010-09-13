@@ -165,21 +165,25 @@ void dda_create(DDA *dda, TARGET *target) {
 	// check speeds here, once we know what the deltas are
 	// if we check them when the gcodes come in, just getting a Z in the gcode doesn't mean there
 	// is a z delta on that move
-	if (dda->z_counter > 0) {
-		if (target->F > MAXIMUM_FEEDRATE_Z)
+	if (dda->z_delta != 0) {
+		if (target->F > MAXIMUM_FEEDRATE_Z) 
 			target->F = MAXIMUM_FEEDRATE_Z;
+		else if (target->F < MINIMUM_FEEDRATE_Z)
+			target->F = MINIMUM_FEEDRATE_Z;
 
-		if (startpoint.F > MAXIMUM_FEEDRATE_Z)
+		if (startpoint.F > MAXIMUM_FEEDRATE_Z) 
 			startpoint.F = MAXIMUM_FEEDRATE_Z;
+		else if (startpoint.F < MINIMUM_FEEDRATE_Z) 
+			startpoint.F = MINIMUM_FEEDRATE_Z;		
 	}
 	else
 	{
-		if (target->F > MAXIMUM_FEEDRATE_XYE)
+		if (target->F > MAXIMUM_FEEDRATE_XYE) 
 			target->F = MAXIMUM_FEEDRATE_XYE;
 		else if (target->F < MINIMUM_FEEDRATE_XYE) 
 			target->F = MINIMUM_FEEDRATE_XYE;
 
-		if (startpoint.F > MAXIMUM_FEEDRATE_XYE)
+		if (startpoint.F > MAXIMUM_FEEDRATE_XYE) 
 			startpoint.F = MAXIMUM_FEEDRATE_XYE;
 		else if (startpoint.F < MINIMUM_FEEDRATE_XYE)
 			startpoint.F = MINIMUM_FEEDRATE_XYE;
