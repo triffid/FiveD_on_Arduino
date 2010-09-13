@@ -48,6 +48,7 @@ my $td;
 if ((($yd - $yc) < $td) && $y_steps) {
 	$td = $yd - $yc;
 }
+
 if ((($zd - $zc) < $td) && $z_steps) {
 	$td = $zd - $zc;
 }
