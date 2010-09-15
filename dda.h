@@ -40,7 +40,7 @@ typedef struct {
 			uint8_t						nullmove			:1;
 			uint8_t						live					:1;
 			#ifdef ACCELERATION_REPRAP
-			uint8_t						accel					:1;
+				uint8_t						accel					:1;
 			#endif
 
 			// wait for temperature to stabilise flag
@@ -55,37 +55,61 @@ typedef struct {
 		uint8_t							allflags;	// used for clearing all flags
 	};
 
-	// distances
-	uint32_t					x_delta;
-	uint32_t					y_delta;
-	uint32_t					z_delta;
-	uint32_t					e_delta;
+	union {
+		uint32_t					x_delta;
+		uint32_t					x_steps;
+	};
+	union {
+		uint32_t					y_delta;
+		uint32_t					y_steps;
+	};
+	union {
+		uint32_t					z_delta;
+		uint32_t					z_steps;
+	};
+	union {
+		uint32_t					e_delta;
+		uint32_t					e_steps;
+	};
+	
+	#ifdef ACCELERATION_TEMPORAL
+		uint32_t					x_step_interval;
+		uint32_t					y_step_interval;
+		uint32_t					z_step_interval;
+		uint32_t					e_step_interval;
 
-	// bresenham counters
-	int32_t						x_counter;
-	int32_t						y_counter;
-	int32_t						z_counter;
-	int32_t						e_counter;
+		uint32_t					x_time_counter;
+		uint32_t					y_time_counter;
+		uint32_t					z_time_counter;
+		uint32_t					e_time_counter;
+	#else
+		// distances
+		// bresenham counters
+		int32_t						x_counter;
+		int32_t						y_counter;
+		int32_t						z_counter;
+		int32_t						e_counter;
 
-	// total number of steps: set to max(x_delta, y_delta, z_delta, e_delta)
-	uint32_t					total_steps;
+		// total number of steps: set to max(x_delta, y_delta, z_delta, e_delta)
+		uint32_t					total_steps;
+	#endif
 
 	// linear acceleration variables: c and end_c are 24.8 fixed point timer values, n is the tracking variable
 	uint32_t					c;
+
 	#ifdef ACCELERATION_REPRAP
-	uint32_t					end_c;
-	int32_t						n;
-	#endif
-	#ifdef ACCELERATION_RAMPING
-	// start of down-ramp, intitalized with total_steps / 2
-	uint32_t					ramp_steps;
-	// counts actual steps done
-	uint32_t					step_no;
-	// 24.8 fixed point timer value, maximum speed
-	uint32_t					c_min;
-	// tracking variable
-	int32_t						n;
-	ramp_state_t			ramp_state;
+		uint32_t					end_c;
+		int32_t						n;
+	#elif defined ACCELERATION_RAMPING
+		// start of down-ramp, intitalized with total_steps / 2
+		uint32_t					ramp_steps;
+		// counts actual steps done
+		uint32_t					step_no;
+		// 24.8 fixed point timer value, maximum speed
+		uint32_t					c_min;
+		// tracking variable
+		int32_t						n;
+		ramp_state_t			ramp_state;
 	#endif
 } DDA;
 
