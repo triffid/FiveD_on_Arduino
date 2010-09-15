@@ -117,55 +117,60 @@ void dda_create(DDA *dda, TARGET *target) {
 	// we end at the passed target
 	memcpy(&(dda->endpoint), target, sizeof(TARGET));
 
-	dda->x_delta = ABS(target->X - startpoint.X);
-	dda->y_delta = ABS(target->Y - startpoint.Y);
-	dda->z_delta = ABS(target->Z - startpoint.Z);
-	dda->e_delta = ABS(target->E - startpoint.E);
-
 	dda->x_direction = (target->X >= startpoint.X)?1:0;
 	dda->y_direction = (target->Y >= startpoint.Y)?1:0;
 	dda->z_direction = (target->Z >= startpoint.Z)?1:0;
 	dda->e_direction = (target->E >= startpoint.E)?1:0;
+	
+	#ifdef ACCELERATION_TEMPORAL
+		dda->x_steps = ABS(target->X - startpoint.X);
+		dda->y_steps = ABS(target->Y - startpoint.Y);
+		dda->z_steps = ABS(target->Z - startpoint.Z);
+		dda->e_steps = ABS(target->E - startpoint.E);
+	#else
+		dda->x_delta = ABS(target->X - startpoint.X);
+		dda->y_delta = ABS(target->Y - startpoint.Y);
+		dda->z_delta = ABS(target->Z - startpoint.Z);
+		dda->e_delta = ABS(target->E - startpoint.E);
 
-	if (debug_flags & DEBUG_DDA) {
-		if (dda->x_direction == 0)
-			serial_writechar('-');
-		serwrite_uint32(dda->x_delta); serial_writechar(',');
-		if (dda->y_direction == 0)
-			serial_writechar('-');
-		serwrite_uint32(dda->y_delta); serial_writechar(',');
-		if (dda->z_direction == 0)
-			serial_writechar('-');
-		serwrite_uint32(dda->z_delta); serial_writechar(',');
-		if (dda->e_direction == 0)
-			serial_writechar('-');
-		serwrite_uint32(dda->e_delta);
+		if (debug_flags & DEBUG_DDA) {
+			if (dda->x_direction == 0)
+				serial_writechar('-');
+			serwrite_uint32(dda->x_delta); serial_writechar(',');
+			if (dda->y_direction == 0)
+				serial_writechar('-');
+			serwrite_uint32(dda->y_delta); serial_writechar(',');
+			if (dda->z_direction == 0)
+				serial_writechar('-');
+			serwrite_uint32(dda->z_delta); serial_writechar(',');
+			if (dda->e_direction == 0)
+				serial_writechar('-');
+			serwrite_uint32(dda->e_delta);
 
-		serial_writestr_P(PSTR("] ["));
-	}
+			serial_writestr_P(PSTR("] ["));
+		}
 
-	dda->total_steps = dda->x_delta;
-	if (dda->y_delta > dda->total_steps)
-		dda->total_steps = dda->y_delta;
-	if (dda->z_delta > dda->total_steps)
-		dda->total_steps = dda->z_delta;
-	if (dda->e_delta > dda->total_steps)
-		dda->total_steps = dda->e_delta;
+		dda->total_steps = dda->x_delta;
+		if (dda->y_delta > dda->total_steps)
+			dda->total_steps = dda->y_delta;
+		if (dda->z_delta > dda->total_steps)
+			dda->total_steps = dda->z_delta;
+		if (dda->e_delta > dda->total_steps)
+			dda->total_steps = dda->e_delta;
 
-	if (debug_flags & DEBUG_DDA) {
-		serial_writestr_P(PSTR("ts:")); serwrite_uint32(dda->total_steps);
-	}
+		if (debug_flags & DEBUG_DDA) {
+			serial_writestr_P(PSTR("ts:")); serwrite_uint32(dda->total_steps);
+		}
 
-	if (dda->total_steps == 0) {
-		dda->nullmove = 1;
-	}
-	else {
+		if (dda->total_steps == 0) {
+			dda->nullmove = 1;
+		}
+	#endif
+	
+	if (dda->nullmove != 0) {
 		// get steppers ready to go
 		steptimeout = 0;
 		power_on();
-
-		dda->x_counter = dda->y_counter = dda->z_counter = dda->e_counter =
-			-(dda->total_steps >> 1);
 
 		// since it's unusual to combine X, Y and Z changes in a single move on reprap, check if we can use simpler approximations before trying the full 3d approximation.
 		if (dda->z_delta == 0)
@@ -174,83 +179,91 @@ void dda_create(DDA *dda, TARGET *target) {
 			distance = dda->z_delta * UM_PER_STEP_Z;
 		else
 			distance = approx_distance_3(dda->x_delta * UM_PER_STEP_X, dda->y_delta * UM_PER_STEP_Y, dda->z_delta * UM_PER_STEP_Z);
-
+		
 		if (distance < 2)
 			distance = dda->e_delta * UM_PER_STEP_E;
-
+		
 		if (debug_flags & DEBUG_DDA) {
-			serial_writestr_P(PSTR(",ds:")); serwrite_uint32(distance);
+			serial_writestr_P(PSTR(",ds:"));
+			serwrite_uint32(distance);
 		}
+		
+		#ifdef ACCELERATION_TEMPORAL
+			uint32_t move_duration = distance * 60 * F_CPU / startpoint.F;
+		#else
+			dda->x_counter = dda->y_counter = dda->z_counter = dda->e_counter =
+			-(dda->total_steps >> 1);
 
-		// pre-calculate move speed in millimeter microseconds per step minute for less math in interrupt context
-		// mm (distance) * 60000000 us/min / step (total_steps) = mm.us per step.min
-		//   note: um (distance) * 60000 == mm * 60000000
-		// so in the interrupt we must simply calculate
-		// mm.us per step.min / mm per min (F) = us per step
+			// pre-calculate move speed in millimeter microseconds per step minute for less math in interrupt context
+			// mm (distance) * 60000000 us/min / step (total_steps) = mm.us per step.min
+			//   note: um (distance) * 60000 == mm * 60000000
+			// so in the interrupt we must simply calculate
+			// mm.us per step.min / mm per min (F) = us per step
 
-		// break this calculation up a bit and lose some precision because 300,000um * 60000 is too big for a uint32
-		// calculate this with a uint64 if you need the precision, but it'll take longer so routines with lots of short moves may suffer
-		// 2^32/6000 is about 715mm which should be plenty
+			// break this calculation up a bit and lose some precision because 300,000um * 60000 is too big for a uint32
+			// calculate this with a uint64 if you need the precision, but it'll take longer so routines with lots of short moves may suffer
+			// 2^32/6000 is about 715mm which should be plenty
 
-		// changed * 10 to * (F_CPU / 100000) so we can work in cpu_ticks rather than microseconds.
-		// timer.c setTimer() routine altered for same reason
+			// changed * 10 to * (F_CPU / 100000) so we can work in cpu_ticks rather than microseconds.
+			// timer.c setTimer() routine altered for same reason
 
-		// changed distance * 6000 .. * F_CPU / 100000 to
-		//         distance * 2400 .. * F_CPU / 40000 so we can move a distance of up to 1800mm without overflowing
-		uint32_t move_duration = ((distance * 2400) / dda->total_steps) * (F_CPU / 40000);
+			// changed distance * 6000 .. * F_CPU / 100000 to
+			//         distance * 2400 .. * F_CPU / 40000 so we can move a distance of up to 1800mm without overflowing
+			uint32_t move_duration = ((distance * 2400) / dda->total_steps) * (F_CPU / 40000);
+		#endif
 
 		#ifdef ACCELERATION_REPRAP
-		// c is initial step time in IOclk ticks
-		dda->c = (move_duration / startpoint.F) << 8;
-
-		if (debug_flags & DEBUG_DDA) {
-			serial_writestr_P(PSTR(",md:")); serwrite_uint32(move_duration);
-			serial_writestr_P(PSTR(",c:")); serwrite_uint32(dda->c >> 8);
-		}
-
-		if (startpoint.F != target->F) {
-			uint32_t stF = startpoint.F / 4;
-			uint32_t enF = target->F / 4;
-			// now some constant acceleration stuff, courtesy of http://www.embedded.com/columns/technicalinsights/56800129?printable=true
-			uint32_t ssq = (stF * stF);
-			uint32_t esq = (enF * enF);
-			int32_t dsq = (int32_t) (esq - ssq) / 4;
-
-			uint8_t msb_ssq = msbloc(ssq);
-			uint8_t msb_tot = msbloc(dda->total_steps);
-
-			dda->end_c = (move_duration / target->F) << 8;
-			// the raw equation WILL overflow at high step rates, but 64 bit math routines take waay too much space
-			// at 65536 mm/min (1092mm/s), ssq/esq overflows, and dsq is also close to overflowing if esq/ssq is small
-			// but if ssq-esq is small, ssq/dsq is only a few bits
-			// we'll have to do it a few different ways depending on the msb locations of each
-			if ((msb_tot + msb_ssq) <= 30) {
-				// we have room to do all the multiplies first
-				if (debug_flags & DEBUG_DDA)
-					serial_writechar('A');
-				dda->n = ((int32_t) (dda->total_steps * ssq) / dsq) + 1;
-			}
-			else if (msb_tot >= msb_ssq) {
-				// total steps has more precision
-				if (debug_flags & DEBUG_DDA)
-					serial_writechar('B');
-				dda->n = (((int32_t) dda->total_steps / dsq) * (int32_t) ssq) + 1;
-			}
-			else {
-				// otherwise
-				if (debug_flags & DEBUG_DDA)
-					serial_writechar('C');
-				dda->n = (((int32_t) ssq / dsq) * (int32_t) dda->total_steps) + 1;
-			}
+			// c is initial step time in IOclk ticks
+			dda->c = (move_duration / startpoint.F) << 8;
 
 			if (debug_flags & DEBUG_DDA) {
-				sersendf_P(PSTR("\n{DDA:CA end_c:%lu, n:%ld, md:%lu, ssq:%lu, esq:%lu, dsq:%lu, msbssq:%u, msbtot:%u}\n"), dda->end_c >> 8, dda->n, move_duration, ssq, esq, dsq, msb_ssq, msb_tot);
+				serial_writestr_P(PSTR(",md:")); serwrite_uint32(move_duration);
+				serial_writestr_P(PSTR(",c:")); serwrite_uint32(dda->c >> 8);
 			}
 
-			dda->accel = 1;
-		}
-		else
-			dda->accel = 0;
+			if (startpoint.F != target->F) {
+				uint32_t stF = startpoint.F / 4;
+				uint32_t enF = target->F / 4;
+				// now some constant acceleration stuff, courtesy of http://www.embedded.com/columns/technicalinsights/56800129?printable=true
+				uint32_t ssq = (stF * stF);
+				uint32_t esq = (enF * enF);
+				int32_t dsq = (int32_t) (esq - ssq) / 4;
+
+				uint8_t msb_ssq = msbloc(ssq);
+				uint8_t msb_tot = msbloc(dda->total_steps);
+
+				dda->end_c = (move_duration / target->F) << 8;
+				// the raw equation WILL overflow at high step rates, but 64 bit math routines take waay too much space
+				// at 65536 mm/min (1092mm/s), ssq/esq overflows, and dsq is also close to overflowing if esq/ssq is small
+				// but if ssq-esq is small, ssq/dsq is only a few bits
+				// we'll have to do it a few different ways depending on the msb locations of each
+				if ((msb_tot + msb_ssq) <= 30) {
+					// we have room to do all the multiplies first
+					if (debug_flags & DEBUG_DDA)
+						serial_writechar('A');
+					dda->n = ((int32_t) (dda->total_steps * ssq) / dsq) + 1;
+				}
+				else if (msb_tot >= msb_ssq) {
+					// total steps has more precision
+					if (debug_flags & DEBUG_DDA)
+						serial_writechar('B');
+					dda->n = (((int32_t) dda->total_steps / dsq) * (int32_t) ssq) + 1;
+				}
+				else {
+					// otherwise
+					if (debug_flags & DEBUG_DDA)
+						serial_writechar('C');
+					dda->n = (((int32_t) ssq / dsq) * (int32_t) dda->total_steps) + 1;
+				}
+
+				if (debug_flags & DEBUG_DDA) {
+					sersendf_P(PSTR("\n{DDA:CA end_c:%lu, n:%ld, md:%lu, ssq:%lu, esq:%lu, dsq:%lu, msbssq:%u, msbtot:%u}\n"), dda->end_c >> 8, dda->n, move_duration, ssq, esq, dsq, msb_ssq, msb_tot);
+				}
+
+				dda->accel = 1;
+			}
+			else
+				dda->accel = 0;
 		#elif defined ACCELERATION_RAMPING
 			dda->ramp_steps = dda->total_steps / 2;
 			dda->step_no = 0;
@@ -259,6 +272,24 @@ void dda_create(DDA *dda, TARGET *target) {
 			dda->c_min = (move_duration / target->F) << 8;
 			dda->n = 1;
 			dda->ramp_state = RAMP_UP;
+		#elif defined ACCELERATION_TEMPORAL
+			dda->x_step_interval = move_duration / dda->x_steps;
+			dda->y_step_interval = move_duration / dda->y_steps;
+			dda->z_step_interval = move_duration / dda->z_steps;
+			dda->e_step_interval = move_duration / dda->e_steps;
+
+			dda->x_time_counter = 0;
+			dda->y_time_counter = 0;
+			dda->z_time_counter = 0;
+			dda->e_time_counter = 0;
+
+			dda->c = dda->x_step_interval;
+			if (dda->y_step_interval < dda->c)
+				dda->c = dda->y_step_interval;
+			if (dda->z_step_interval < dda->c)
+				dda->c = dda->z_step_interval;
+			if (dda->e_step_interval < dda->c)
+				dda->c = dda->e_step_interval;
 		#else
 			dda->c = (move_duration / target->F) << 8;
 		#endif
@@ -303,8 +334,12 @@ void dda_start(DDA *dda) {
 		dda->live = 1;
 	}
 
+	#ifdef ACCELERATION_TEMPORAL
+	setTimer(dda->c);
+	#else
 	// set timeout for first step
 	setTimer(dda->c >> 8);
+	#endif
 }
 
 /*
@@ -315,6 +350,56 @@ void dda_step(DDA *dda) {
 	// called from interrupt context! keep it as simple as possible
 	uint8_t	did_step = 0;
 
+	#ifdef ACCELERATION_TEMPORAL
+	if (dda->x_time_counter > dda->x_step_interval) {
+		if ((current_position.X != dda->endpoint.X) /* &&
+			(x_max() != dda->x_direction) && (x_min() == dda->x_direction) */) {
+			x_step();
+			if (dda->x_direction)
+				current_position.X++;
+			else
+				current_position.X--;
+		}
+		dda->x_time_counter -= dda->x_step_interval;
+		dda->x_steps--;
+	}
+	if (dda->y_time_counter > dda->y_step_interval) {
+		if ((current_position.Y != dda->endpoint.Y) /* &&
+			(y_max() != dda->y_direction) && (y_min() == dda->y_direction) */) {
+			y_step();
+		if (dda->y_direction)
+			current_position.Y++;
+		else
+			current_position.Y--;
+		}
+		dda->y_time_counter -= dda->y_step_interval;
+		dda->y_steps--;
+	}
+	if (dda->z_time_counter > dda->z_step_interval) {
+		if ((current_position.Z != dda->endpoint.Z) /* &&
+			(z_max() != dda->z_direction) && (z_min() == dda->z_direction) */) {
+			z_step();
+		if (dda->z_direction)
+			current_position.Z++;
+		else
+			current_position.Z--;
+		}
+		dda->z_time_counter -= dda->z_step_interval;
+		dda->z_steps--;
+	}
+	if (dda->e_time_counter > dda->e_step_interval) {
+		if ((current_position.E != dda->endpoint.E) /* &&
+			(e_max() != dda->e_direction) && (e_min() == dda->e_direction) */) {
+			e_step();
+		if (dda->e_direction)
+			current_position.E++;
+		else
+			current_position.E--;
+		}
+		dda->e_time_counter -= dda->e_step_interval;
+		dda->e_steps--;
+	}
+	#else
 	if ((current_position.X != dda->endpoint.X) /* &&
 	    (x_max() != dda->x_direction) && (x_min() == dda->x_direction) */) {
 		dda->x_counter -= dda->x_delta;
@@ -373,6 +458,7 @@ void dda_step(DDA *dda) {
 			dda->e_counter += dda->total_steps;
 		}
 	}
+	#endif
 
 	#if STEP_INTERRUPT_INTERRUPTIBLE
 		// since we have sent steps to all the motors that will be stepping and the rest of this function isn't so time critical,
@@ -399,36 +485,59 @@ void dda_step(DDA *dda) {
 			}
 			// else we are already at target speed
 		}
-	#endif
-	#ifdef ACCELERATION_RAMPING
+	#elif defined ACCELERATION_RAMPING
 		// - algorithm courtesy of http://www.embedded.com/columns/technicalinsights/56800129?printable=true
 		// - for simplicity, taking even/uneven number of steps into account dropped
 		// - number of steps moved is always accurate, speed might be one step off
 		switch (dda->ramp_state) {
-			case RAMP_UP:
-			case RAMP_MAX:
-				if (dda->step_no >= dda->ramp_steps) {
-					// RAMP_UP: time to decelerate before reaching maximum speed
-					// RAMP_MAX: time to decelerate
-					dda->ramp_state = RAMP_DOWN;
-					dda->n = -((int32_t)2) - dda->n;
-				}
-				if (dda->ramp_state == RAMP_MAX)
-					break;
-			case RAMP_DOWN:
-				dda->n += 4;
-				// be careful of signedness!
-				dda->c = (int32_t)dda->c - ((int32_t)(dda->c * 2) / dda->n);
-				if (dda->c <= dda->c_min) {
-					// maximum speed reached
-					dda->c = dda->c_min;
-					dda->ramp_state = RAMP_MAX;
-					dda->ramp_steps = dda->total_steps - dda->step_no;
-				}
-				setTimer(dda->c >> 8);
+		case RAMP_UP:
+		case RAMP_MAX:
+			if (dda->step_no >= dda->ramp_steps) {
+				// RAMP_UP: time to decelerate before reaching maximum speed
+				// RAMP_MAX: time to decelerate
+				dda->ramp_state = RAMP_DOWN;
+				dda->n = -((int32_t)2) - dda->n;
+			}
+			if (dda->ramp_state == RAMP_MAX)
 				break;
+		case RAMP_DOWN:
+			dda->n += 4;
+			// be careful of signedness!
+			dda->c = (int32_t)dda->c - ((int32_t)(dda->c * 2) / dda->n);
+			if (dda->c <= dda->c_min) {
+				// maximum speed reached
+				dda->c = dda->c_min;
+				dda->ramp_state = RAMP_MAX;
+				dda->ramp_steps = dda->total_steps - dda->step_no;
+			}
+			setTimer(dda->c >> 8);
+			break;
 		}
 		dda->step_no++;
+	#elif defined ACCELERATION_TEMPORAL
+		dda->c = dda->x_step_interval - dda->x_time_counter;
+		if ((dda->y_step_interval - dda->y_time_counter) < dda->c)
+			dda->c = dda->y_step_interval - dda->y_time_counter;
+		if ((dda->z_step_interval - dda->z_time_counter) < dda->c)
+			dda->c = dda->z_step_interval - dda->z_time_counter;
+		if ((dda->e_step_interval - dda->e_time_counter) < dda->c)
+			dda->c = dda->e_step_interval - dda->e_time_counter;
+		
+		if (dda->x_steps)
+			dda->x_time_counter += dda->c;
+		if (dda->y_steps)
+			dda->y_time_counter += dda->c;
+		if (dda->z_steps)
+			dda->z_time_counter += dda->c;
+		if (dda->e_steps)
+			dda->e_time_counter += dda->c;
+		if (
+				(dda->x_steps > 0) ||
+				(dda->y_steps > 0) ||
+				(dda->z_steps > 0) ||
+				(dda->e_steps > 0))
+			did_step = 1;
+		setTimer(dda->c);
 	#endif
 
 	if (did_step) {
