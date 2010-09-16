@@ -189,8 +189,12 @@ void dda_create(DDA *dda, TARGET *target) {
 		}
 		
 		#ifdef ACCELERATION_TEMPORAL
+<<<<<<< HEAD
 			// bracket part of this equation in an attempt to avoid overflow: 60 * 16MHz * 5mm is >32 bits
 			uint32_t move_duration = distance * (60 * F_CPU / startpoint.F);
+=======
+			uint32_t move_duration = distance * 60 * F_CPU / startpoint.F;
+>>>>>>> 1b6b28b48875e466e20d2b2ba9917d57520b28a1
 		#else
 			dda->x_counter = dda->y_counter = dda->z_counter = dda->e_counter =
 			-(dda->total_steps >> 1);
