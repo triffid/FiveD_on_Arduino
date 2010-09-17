@@ -5,15 +5,14 @@
 #include	"machine.h"
 #include	"serial.h"
 #include	"sermsg.h"
-#include	"temp.h"
 #include	"timer.h"
 #include	"dda_queue.h"
 #include	"dda.h"
 #include	"clock.h"
 #include	"watchdog.h"
 #include	"debug.h"
-#include	"heater.h"
 #include	"sersendf.h"
+#include	"temp_heater_list.h"
 
 uint8_t last_field = 0;
 
@@ -556,7 +555,9 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// M104- set temperature
 			case 104:
-				temp_set(gcmd->S);
+				if (gcmd->seen_P == 0)
+					gcmd->P = 0;
+				temp_set(gcmd->P, gcmd->S);
 				if (gcmd->S) {
 					enable_heater();
 					power_on();
@@ -568,7 +569,9 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// M105- get temperature
 			case 105:
-				temp_print();
+				if (gcmd->seen_P == 0)
+					gcmd->P = 0;
+				temp_print(gcmd->P);
 				break;
 
 			// M106- fan on
@@ -584,7 +587,9 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// M109- set temp and wait
 			case 109:
-				temp_set(gcmd->S);
+				if (gcmd->seen_P == 0)
+					gcmd->P = 0;
+				temp_set(gcmd->P, gcmd->S);
 				if (gcmd->S) {
 					enable_heater();
 					power_on();
@@ -619,26 +624,26 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// M130- heater P factor
 			case 130:
 				if (gcmd->seen_S)
-					p_factor = gcmd->S;
+					pid_set_p(gcmd->P, gcmd->S);
 				break;
 			// M131- heater I factor
 			case 131:
 				if (gcmd->seen_S)
-					i_factor = gcmd->S;
+					pid_set_i(gcmd->P, gcmd->S);
 				break;
 			// M132- heater D factor
 			case 132:
 				if (gcmd->seen_S)
-					d_factor = gcmd->S;
+					pid_set_d(gcmd->P, gcmd->S);
 				break;
 			// M133- heater I limit
 			case 133:
 				if (gcmd->seen_S)
-					i_limit = gcmd->S;
+					pid_set_i_limit(gcmd->P, gcmd->S);
 				break;
 			// M134- save PID settings to eeprom
 			case 134:
-				heater_save_settings();
+				temp_heater_save_settings();
 				break;
 
 			#ifdef	DEBUG

@@ -10,13 +10,12 @@
 #include	"gcode.h"
 #include	"timer.h"
 #include	"clock.h"
-#include	"temp.h"
 #include	"sermsg.h"
 #include	"watchdog.h"
 #include	"debug.h"
 #include	"sersendf.h"
-#include	"heater.h"
 #include	"analog.h"
+#include	"temp_heater_list.h"
 
 void io_init(void) {
 	// disable modules we don't use
@@ -93,7 +92,7 @@ void init(void) {
 	clock_setup();
 
 	// read PID settings from EEPROM
-	heater_init();
+	temp_heater_init();
 
 	// set up default feedrate
 	current_position.F = startpoint.F = next_target.target.F = SEARCH_FEEDRATE_Z;
@@ -116,7 +115,7 @@ void clock_250ms(void) {
 	// reset watchdog
 	wd_reset();
 
-	temp_tick();
+	temp_heater_tick();
 
 	if (steptimeout > (30 * 4)) {
 		power_off();
@@ -136,8 +135,8 @@ void clock_250ms(void) {
 			print_queue();
 		}
 		// temperature
-		if (temp_get_target())
-			temp_print();
+/*		if (temp_get_target())
+			temp_print();*/
 	}
 }
 

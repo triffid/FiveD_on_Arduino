@@ -32,10 +32,6 @@
 #define	SEARCH_FEEDRATE_Z	50
 #define	SEARCH_FEEDRATE_E	50
 
-// extruder settings
-#define	TEMP_HYSTERESIS		20
-#define	TEMP_RESIDENCY_TIME	60
-
 /*
 	acceleration, reprap style.
 		Each movement starts at the speed of the previous command and accelerates or decelerates linearly to reach target speed at the end of the movement.
@@ -63,17 +59,39 @@
 	#endif
 #endif
 
-// which temperature sensor are you using?
-// #define	TEMP_MAX6675
+
+/*
+	temperature/heater closed loop stuff
+*/
+
+// which temperature sensors are you using?
+#define	TEMP_MAX6675
 #define	TEMP_THERMISTOR
 // #define	TEMP_AD595
 
-// if you selected thermistor or AD595, what pin is it on?
-#define	TEMP_PIN_CHANNEL	AIO0_PIN
-#define	ANALOG_MASK				MASK(TEMP_PIN_CHANNEL)
+// if you selected thermistor or AD595, what pins are they on?
+// #define	ANALOG_MASK				MASK(TEMP_PIN_CHANNEL)
+#define	ANALOG_MASK				0
+
+// how many temperature sensor/heater pairs do you have?
+#define	NUM_TEMP_HEATERS	1
+// enter the details for them in temp_heater_list.c
+
+// temperature must stay within target +/- hysteresis to be considered "resident"
+#define	TEMP_HYSTERESIS		20
+// when a temperature sensor has remained resident for this many cycles, it is considered to have reached its target
+#define	TEMP_RESIDENCY_TIME	60
+
+
+// this is how many previous readings to keep for smoothing the derivative in the PID algorithm- don't touch unless you know what you're doing
+#define		TH_COUNT	8
+
+// this is the PID scaling factor to convert between decimals passed to/from host and internally used integers- don't touch unless you know what you're doing
+#define		PID_SCALE			1024L
+
 
 /*
-firmware build options
+	firmware build options
 */
 
 // this option makes the step interrupt interruptible.
