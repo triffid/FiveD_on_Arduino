@@ -85,7 +85,8 @@
 
 #define	_y_step(st)						WRITE(Y_STEP_PIN, st)
 #define	y_step()							_y_step(1);
-#define	y_direction(dir)			WRITE(Y_DIR_PIN, dir)
+//Y Direction inverted
+#define	y_direction(dir)			WRITE(Y_DIR_PIN, !dir)
 #define	y_min()								READ(Y_MIN_PIN)
 #ifdef	Y_MAX_PIN
 	#define	y_max()							READ(Y_MAX_PIN)

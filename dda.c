@@ -14,6 +14,10 @@
 #define	ABS(v)		(((v) >= 0)?(v):(-(v)))
 #endif
 
+#ifndef MAX
+#define MAX(x,y)	(((x)>(y))?(x):(y))
+#endif
+
 #ifndef	ABSDELTA
 #define	ABSDELTA(a, b)	(((a) >= (b))?((a) - (b)):((b) - (a)))
 #endif
@@ -124,9 +128,6 @@ void dda_create(DDA *dda, TARGET *target) {
 	if (debug_flags & DEBUG_DDA)
 		serial_writestr_P(PSTR("\n{DDA_CREATE: ["));
 
-	// we end at the passed target
-	memcpy(&(dda->endpoint), target, sizeof(TARGET));
-
 	dda->x_delta = ABS(target->X - startpoint.X);
 	dda->y_delta = ABS(target->Y - startpoint.Y);
 	dda->z_delta = ABS(target->Z - startpoint.Z);
@@ -166,31 +167,40 @@ void dda_create(DDA *dda, TARGET *target) {
 	// if we check them when the gcodes come in, just getting a Z in the gcode doesn't mean there
 	// is a z delta on that move
 	if (dda->z_delta != 0) {
+		if (target->F < MINIMUM_FEEDRATE_Z)
+			target->F = MAX(startpoint.F, MINIMUM_FEEDRATE_Z);
+
 		if (target->F > MAXIMUM_FEEDRATE_Z) 
 			target->F = MAXIMUM_FEEDRATE_Z;
-		else if (target->F < MINIMUM_FEEDRATE_Z)
-			target->F = MINIMUM_FEEDRATE_Z;
 
 		if (startpoint.F > MAXIMUM_FEEDRATE_Z) 
-			startpoint.F = MAXIMUM_FEEDRATE_Z;
-		else if (startpoint.F < MINIMUM_FEEDRATE_Z) 
-			startpoint.F = MINIMUM_FEEDRATE_Z;		
+			startpoint.F = MAXIMUM_FEEDRATE_Z;	
 	}
 	else
 	{
+		if (startpoint.F < MINIMUM_FEEDRATE_XYE) 
+			startpoint.F = MINIMUM_FEEDRATE_XYE;
+
+		if (target->F < MINIMUM_FEEDRATE_XYE) 
+			target->F = MAX(startpoint.F, MINIMUM_FEEDRATE_XYE);
+
 		if (target->F > MAXIMUM_FEEDRATE_XYE) 
 			target->F = MAXIMUM_FEEDRATE_XYE;
-		else if (target->F < MINIMUM_FEEDRATE_XYE) 
-			target->F = MINIMUM_FEEDRATE_XYE;
 
 		if (startpoint.F > MAXIMUM_FEEDRATE_XYE) 
 			startpoint.F = MAXIMUM_FEEDRATE_XYE;
-		else if (startpoint.F < MINIMUM_FEEDRATE_XYE)
-			startpoint.F = MINIMUM_FEEDRATE_XYE;
 	}
+
+
+
+	// we end at the passed target
+	// Copy this information over once we do our manipulation of min/max feedrates
+	memcpy(&(dda->endpoint), target, sizeof(TARGET));
 				
 
 	if(debug_flags & DEBUG_DDA) {
+		serial_writestr_P(PSTR("start F:")); serwrite_uint32(startpoint.F);
+		serial_writestr_P(PSTR("target F:")); serwrite_uint32(target->F);
 		serial_writestr_P(PSTR("ts:")); serwrite_uint32(dda->total_steps);
 	}
 
