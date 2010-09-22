@@ -326,16 +326,12 @@ void scan_char(uint8_t c) {
 					next_target.N_expected = next_target.N + 1;
 			}
 			else {
-				serial_writestr_P(PSTR("Expected checksum "));
-				serwrite_uint8(next_target.checksum_calculated);
-				serial_writechar('\n');
+				sersendf_P("Expected checksum %u\n", next_target.checksum_calculated);
 				request_resend();
 			}
 		}
 		else {
-			serial_writestr_P(PSTR("Expected line number "));
-			serwrite_uint32(next_target.N_expected);
-			serial_writechar('\n');
+			sersendf_P("Expected line number %lu\n", next_target.N_expected);
 			request_resend();
 		}
 
@@ -520,9 +516,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// unknown gcode: spit an error
 			default:
-				serial_writestr_P(PSTR("E: Bad G-code "));
-				serwrite_uint8(gcmd->G);
-				serial_writechar('\n');
+				sersendf_P("E: Bad G-code %u\n", gcmd->G);
 		}
 	}
 	else if (gcmd->seen_M) {
@@ -664,37 +658,20 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// DEBUG: return current position
 			case 250:
-				serial_writestr_P(PSTR("{X:"));
-				serwrite_int32(current_position.X);
-				serial_writestr_P(PSTR(",Y:"));
-				serwrite_int32(current_position.Y);
-				serial_writestr_P(PSTR(",Z:"));
-				serwrite_int32(current_position.Z);
-				serial_writestr_P(PSTR(",E:"));
-				serwrite_int32(current_position.E);
-				serial_writestr_P(PSTR(",F:"));
-				serwrite_int32(current_position.F);
-				serial_writestr_P(PSTR(",c:"));
-				serwrite_uint32(movebuffer[mb_tail].c);
-				serial_writestr_P(PSTR("}\n"));
+				sersendf_P("{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld,c:%u}\n", current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F, movebuffer[mb_tail].c);
 
-				serial_writestr_P(PSTR("{X:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.X);
-				serial_writestr_P(PSTR(",Y:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.Y);
-				serial_writestr_P(PSTR(",Z:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.Z);
-				serial_writestr_P(PSTR(",E:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.E);
-				serial_writestr_P(PSTR(",F:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.F);
-				serial_writestr_P(PSTR(",c:"));
-				#ifdef ACCELERATION_REPRAP
-				serwrite_uint32(movebuffer[mb_tail].end_c);
-				#else
-				serwrite_uint32(movebuffer[mb_tail].c);
-				#endif
-				serial_writestr_P(PSTR("}\n"));
+				sersendf_P("{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld,c:%u}\n",
+						movebuffer[mb_tail].endpoint.X,
+						movebuffer[mb_tail].endpoint.Y,
+						movebuffer[mb_tail].endpoint.Z,
+						movebuffer[mb_tail].endpoint.E,
+						movebuffer[mb_tail].endpoint.F,
+					#ifdef ACCELERATION_REPRAP
+						movebuffer[mb_tail].end_c
+					#else
+						movebuffer[mb_tail].c
+					#endif
+					);
 
 				print_queue();
 				break;
@@ -712,20 +689,14 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// DEBUG: write arbitrary memory locatiom
 			case 254:
-				serwrite_hex8(gcmd->S);
-				serial_writechar(':');
-				serwrite_hex8(*(volatile uint8_t *)(gcmd->S));
-				serial_writestr_P(PSTR("->"));
-				serwrite_hex8(gcmd->P);
-				serial_writechar('\n');
+				// FIXME: use sersendf
+				sersendf_P("%x:%x->%x\n", gcmd->S, *(volatile uint8_t *)(gcmd->S),gcmd->P);
 				(*(volatile uint8_t *)(gcmd->S)) = gcmd->P;
 				break;
 			#endif /* DEBUG */
 			// unknown mcode: spit an error
 			default:
-				serial_writestr_P(PSTR("E: Bad M-code "));
-				serwrite_uint8(gcmd->M);
-				serial_writechar('\n');
+				sersendf_P("E: Bad M-code %u\n", gcmd->M);
 		}
 	}
 }
@@ -739,8 +710,5 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 ****************************************************************************/
 
 void request_resend(void) {
-	serial_writestr_P(PSTR("Resend:"));
-	serwrite_uint8(next_target.N);
-	serial_writechar('\n');
+	sersendf_P("Resend:%lu\n", next_target.N);
 }
-
