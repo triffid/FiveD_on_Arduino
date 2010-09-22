@@ -345,7 +345,7 @@ void scan_char(uint8_t c) {
 			next_target.seen_S = next_target.seen_P = next_target.seen_N = \
 			next_target.seen_M = next_target.seen_checksum = \
 			next_target.seen_semi_comment = next_target.seen_parens_comment = \
-			next_target.checksum_read = next_target.checksum_calculated = 0;
+			next_target.checksum_read = next_target.checksum_calculated = next_target.S = next_target.P = 0;
 		last_field = 0;
 		read_digit.sign = read_digit.mantissa = read_digit.exponent = 0;
 	}
@@ -556,8 +556,6 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// M104- set temperature
 			case 104:
-				if (gcmd->seen_P == 0)
-					gcmd->P = 0;
 				temp_set(gcmd->P, gcmd->S);
 				if (gcmd->S) {
 					enable_heater();
@@ -570,8 +568,6 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// M105- get temperature
 			case 105:
-				if (gcmd->seen_P == 0)
-					gcmd->P = 0;
 				temp_print(gcmd->P);
 				break;
 
@@ -645,6 +641,13 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// M134- save PID settings to eeprom
 			case 134:
 				heater_save_settings();
+				break;
+
+			// FIXME: check for suitable M-code for this function
+			// M138- set heater PWM value
+			case 138:
+				if (gcmd->seen_S)
+					heater_set(gcmd->P, gcmd->S);
 				break;
 
 			#ifdef	DEBUG
