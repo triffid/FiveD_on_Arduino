@@ -15,10 +15,11 @@
 #include	"debug.h"
 #include	"sersendf.h"
 #include	"analog.h"
-#include	"temp_heater_list.h"
+#include	"temp.h"
+#include	"heater.h"
 
 void io_init(void) {
-	// disable modules we don't use
+	// disable modules we don't use: TWI, ADC (re-enabled in analog_init if necessary), and SPI (re-enabled in temp_sensor_tick if max6675 is enabled)
 	#ifdef PRR
 		PRR = MASK(PRTWI) | MASK(PRADC) | MASK(PRSPI);
 	#endif
@@ -28,6 +29,7 @@ void io_init(void) {
 			PRR1 = 0xFF;
 		#endif
 	#endif
+	// disable analog comparator
 	ACSR = MASK(ACD);
 
 	// setup I/O pins
@@ -92,7 +94,7 @@ void init(void) {
 	clock_setup();
 
 	// read PID settings from EEPROM
-	temp_heater_init();
+	heater_init();
 
 	// set up default feedrate
 	current_position.F = startpoint.F = next_target.target.F = SEARCH_FEEDRATE_Z;
@@ -115,7 +117,7 @@ void clock_250ms(void) {
 	// reset watchdog
 	wd_reset();
 
-	temp_heater_tick();
+// 	temp_sensor_tick();
 
 	if (steptimeout > (30 * 4)) {
 		power_off();
@@ -153,8 +155,10 @@ int main (void)
 			scan_char(c);
 		}
 
-		ifclock(CLOCK_FLAG_250MS) {
+		ifclock(CLOCK_FLAG_10MS)
+			temp_sensor_tick();
+
+		ifclock(CLOCK_FLAG_250MS)
 			clock_250ms();
-		}
 	}
 }

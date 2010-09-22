@@ -14,7 +14,7 @@
 
 PROGRAM = mendel
 
-SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c analog.c temp_heater_list.c
+SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c analog.c temp.c heater.c
 
 ##############################################################################
 #                                                                            #

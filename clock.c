@@ -14,13 +14,14 @@
 
 // global clock
 #ifdef	GLOBAL_CLOCK
-volatile uint32_t	clock = 0;
+	volatile uint32_t	clock = 0;
 #endif
 
-// 1/4 second tick
-uint8_t						clock_counter_250ms = 0;
-uint8_t						clock_counter_1s = 0;
-volatile uint8_t	clock_flag = 0;
+uint8_t						clock_counter_10ms	= 0;
+uint8_t						clock_counter_250ms	= 0;
+uint8_t						clock_counter_1s		= 0;
+
+volatile uint8_t	clock_flag					= 0;
 
 void clock_setup() {
 	// use system clock
@@ -33,9 +34,9 @@ void clock_setup() {
 	TCCR2B = MASK(CS22) | MASK(CS20);
 
 	// 125KHz / 125 = 1KHz for a 1ms tick rate
-	OCR2A = 125;
+	OCR2A = (F_CPU / 128 / 1000);
 
-	// interrupt on overflow, when counter reaches OCR2A
+	// interrupt on match, when counter reaches OCR2A
 	TIMSK2 |= MASK(OCIE2A);
 }
 
@@ -44,6 +45,12 @@ ISR(TIMER2_COMPA_vect) {
 #ifdef	GLOBAL_CLOCK
 	clock++;
 #endif
+	// 10ms tick
+	if (++clock_counter_10ms == 10) {
+		clock_flag |= CLOCK_FLAG_10MS;
+		clock_counter_10ms = 0;
+	}
+
 	// 1/4 second tick
 	if (++clock_counter_250ms == 250) {
 		clock_flag |= CLOCK_FLAG_250MS;

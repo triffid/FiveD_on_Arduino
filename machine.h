@@ -73,8 +73,12 @@
 // #define	ANALOG_MASK				MASK(TEMP_PIN_CHANNEL)
 #define	ANALOG_MASK				0
 
-// how many temperature sensor/heater pairs do you have?
-#define	NUM_TEMP_HEATERS	1
+// how many temperature sensors do you have?
+#define	NUM_TEMP_SENSORS	1
+// enter the details for them in temp_heater_list.c
+
+// how many heaters do you have?
+#define	NUM_HEATERS				1
 // enter the details for them in temp_heater_list.c
 
 // temperature must stay within target +/- hysteresis to be considered "resident"

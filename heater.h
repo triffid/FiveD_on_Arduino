@@ -3,19 +3,17 @@
 
 #include	<stdint.h>
 
-// extruder heater PID factors
-// google "PID without a PHD" if you don't understand this PID stuff
-extern int32_t p_factor;
-extern int32_t i_factor;
-extern int32_t d_factor;
-extern int16_t i_limit;
-
-#define		PID_SCALE			1024L
-#define		I_LIMIT				4000
+#include	"machine.h"
 
 void heater_init(void);
 void heater_save_settings(void);
-void heater_tick(int16_t current_temp, int16_t target_temp);
-uint8_t	temp_achieved(void);
+
+void heater_set(uint8_t index, uint8_t value);
+void heater_tick(uint8_t h, uint16_t current_temp, uint16_t target_temp);
+
+void pid_set_p(uint8_t index, int32_t p);
+void pid_set_i(uint8_t index, int32_t i);
+void pid_set_d(uint8_t index, int32_t d);
+void pid_set_i_limit(uint8_t index, int32_t i_limit);
 
 #endif	/* _HEATER_H */
