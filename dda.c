@@ -396,8 +396,7 @@ void dda_step(DDA *dda) {
 			}
 			// else we are already at target speed
 		}
-	#endif
-	#ifdef ACCELERATION_RAMPING
+	#elif defined ACCELERATION_RAMPING
 		// - algorithm courtesy of http://www.embedded.com/columns/technicalinsights/56800129?printable=true
 		// - for simplicity, taking even/uneven number of steps into account dropped
 		// - number of steps moved is always accurate, speed might be one step off
