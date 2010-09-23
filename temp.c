@@ -1,5 +1,6 @@
 #include	"temp.h"
 
+#include	<stdlib.h>
 #include	<avr/eeprom.h>
 #include	<avr/pgmspace.h>
 
@@ -91,10 +92,6 @@ uint16_t temptable[NUMTEMPS][2] PROGMEM = {
 
 #ifdef	TEMP_AD595
 #include	"analog.h"
-#endif
-
-#ifndef	ABSDELTA
-#define	ABSDELTA(a, b)	(((a) >= (b))?((a) - (b)):((b) - (a)))
 #endif
 
 void temp_sensor_tick() {
@@ -200,7 +197,7 @@ void temp_sensor_tick() {
 			}
 			temp_sensors_runtime[i].last_read_temp = temp;
 			
-			if (ABSDELTA(temp, temp_sensors_runtime[i].target_temp) < TEMP_HYSTERESIS) {
+			if (labs(temp - temp_sensors_runtime[i].target_temp) < TEMP_HYSTERESIS) {
 				if (temp_sensors_runtime[i].temp_residency < TEMP_RESIDENCY_TIME)
 					temp_sensors_runtime[i].temp_residency++;
 			}

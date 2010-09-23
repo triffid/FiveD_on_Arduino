@@ -1,6 +1,7 @@
 #include	"dda.h"
 
 #include	<string.h>
+#include	<stdlib.h>
 #include	<avr/interrupt.h>
 
 #include	"timer.h"
@@ -9,10 +10,6 @@
 #include	"dda_queue.h"
 #include	"debug.h"
 #include	"sersendf.h"
-
-#ifndef	ABS
-#define	ABS(v)		(((v) >= 0)?(v):(-(v)))
-#endif
 
 /*
 	step timeout
@@ -117,10 +114,10 @@ void dda_create(DDA *dda, TARGET *target) {
 	// we end at the passed target
 	memcpy(&(dda->endpoint), target, sizeof(TARGET));
 
-	dda->x_delta = ABS(target->X - startpoint.X);
-	dda->y_delta = ABS(target->Y - startpoint.Y);
-	dda->z_delta = ABS(target->Z - startpoint.Z);
-	dda->e_delta = ABS(target->E - startpoint.E);
+	dda->x_delta = labs(target->X - startpoint.X);
+	dda->y_delta = labs(target->Y - startpoint.Y);
+	dda->z_delta = labs(target->Z - startpoint.Z);
+	dda->e_delta = labs(target->E - startpoint.E);
 
 	dda->x_direction = (target->X >= startpoint.X)?1:0;
 	dda->y_direction = (target->Y >= startpoint.Y)?1:0;
@@ -200,57 +197,57 @@ void dda_create(DDA *dda, TARGET *target) {
 		uint32_t move_duration = ((distance * 2400) / dda->total_steps) * (F_CPU / 40000);
 
 		#ifdef ACCELERATION_REPRAP
-		// c is initial step time in IOclk ticks
-		dda->c = (move_duration / startpoint.F) << 8;
-
-		if (debug_flags & DEBUG_DDA) {
-			serial_writestr_P(PSTR(",md:")); serwrite_uint32(move_duration);
-			serial_writestr_P(PSTR(",c:")); serwrite_uint32(dda->c >> 8);
-		}
-
-		if (startpoint.F != target->F) {
-			uint32_t stF = startpoint.F / 4;
-			uint32_t enF = target->F / 4;
-			// now some constant acceleration stuff, courtesy of http://www.embedded.com/columns/technicalinsights/56800129?printable=true
-			uint32_t ssq = (stF * stF);
-			uint32_t esq = (enF * enF);
-			int32_t dsq = (int32_t) (esq - ssq) / 4;
-
-			uint8_t msb_ssq = msbloc(ssq);
-			uint8_t msb_tot = msbloc(dda->total_steps);
-
-			dda->end_c = (move_duration / target->F) << 8;
-			// the raw equation WILL overflow at high step rates, but 64 bit math routines take waay too much space
-			// at 65536 mm/min (1092mm/s), ssq/esq overflows, and dsq is also close to overflowing if esq/ssq is small
-			// but if ssq-esq is small, ssq/dsq is only a few bits
-			// we'll have to do it a few different ways depending on the msb locations of each
-			if ((msb_tot + msb_ssq) <= 30) {
-				// we have room to do all the multiplies first
-				if (debug_flags & DEBUG_DDA)
-					serial_writechar('A');
-				dda->n = ((int32_t) (dda->total_steps * ssq) / dsq) + 1;
-			}
-			else if (msb_tot >= msb_ssq) {
-				// total steps has more precision
-				if (debug_flags & DEBUG_DDA)
-					serial_writechar('B');
-				dda->n = (((int32_t) dda->total_steps / dsq) * (int32_t) ssq) + 1;
-			}
-			else {
-				// otherwise
-				if (debug_flags & DEBUG_DDA)
-					serial_writechar('C');
-				dda->n = (((int32_t) ssq / dsq) * (int32_t) dda->total_steps) + 1;
-			}
+			// c is initial step time in IOclk ticks
+			dda->c = (move_duration / startpoint.F) << 8;
 
 			if (debug_flags & DEBUG_DDA) {
-				sersendf_P(PSTR("\n{DDA:CA end_c:%lu, n:%ld, md:%lu, ssq:%lu, esq:%lu, dsq:%lu, msbssq:%u, msbtot:%u}\n"), dda->end_c >> 8, dda->n, move_duration, ssq, esq, dsq, msb_ssq, msb_tot);
+				serial_writestr_P(PSTR(",md:")); serwrite_uint32(move_duration);
+				serial_writestr_P(PSTR(",c:")); serwrite_uint32(dda->c >> 8);
 			}
 
-			dda->accel = 1;
-		}
-		else
-			dda->accel = 0;
+			if (startpoint.F != target->F) {
+				uint32_t stF = startpoint.F / 4;
+				uint32_t enF = target->F / 4;
+				// now some constant acceleration stuff, courtesy of http://www.embedded.com/columns/technicalinsights/56800129?printable=true
+				uint32_t ssq = (stF * stF);
+				uint32_t esq = (enF * enF);
+				int32_t dsq = (int32_t) (esq - ssq) / 4;
+
+				uint8_t msb_ssq = msbloc(ssq);
+				uint8_t msb_tot = msbloc(dda->total_steps);
+
+				dda->end_c = (move_duration / target->F) << 8;
+				// the raw equation WILL overflow at high step rates, but 64 bit math routines take waay too much space
+				// at 65536 mm/min (1092mm/s), ssq/esq overflows, and dsq is also close to overflowing if esq/ssq is small
+				// but if ssq-esq is small, ssq/dsq is only a few bits
+				// we'll have to do it a few different ways depending on the msb locations of each
+				if ((msb_tot + msb_ssq) <= 30) {
+					// we have room to do all the multiplies first
+					if (debug_flags & DEBUG_DDA)
+						serial_writechar('A');
+					dda->n = ((int32_t) (dda->total_steps * ssq) / dsq) + 1;
+				}
+				else if (msb_tot >= msb_ssq) {
+					// total steps has more precision
+					if (debug_flags & DEBUG_DDA)
+						serial_writechar('B');
+					dda->n = (((int32_t) dda->total_steps / dsq) * (int32_t) ssq) + 1;
+				}
+				else {
+					// otherwise
+					if (debug_flags & DEBUG_DDA)
+						serial_writechar('C');
+					dda->n = (((int32_t) ssq / dsq) * (int32_t) dda->total_steps) + 1;
+				}
+
+				if (debug_flags & DEBUG_DDA) {
+					sersendf_P(PSTR("\n{DDA:CA end_c:%lu, n:%ld, md:%lu, ssq:%lu, esq:%lu, dsq:%lu, msbssq:%u, msbtot:%u}\n"), dda->end_c >> 8, dda->n, move_duration, ssq, esq, dsq, msb_ssq, msb_tot);
+				}
+
+				dda->accel = 1;
+			}
+			else
+				dda->accel = 0;
 		#elif defined ACCELERATION_RAMPING
 			dda->ramp_steps = dda->total_steps / 2;
 			dda->step_no = 0;

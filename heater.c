@@ -53,10 +53,6 @@ struct {
 	uint8_t						temp_history_pointer;
 } heaters_runtime[NUM_HEATERS];
 
-#ifndef	ABSDELTA
-#define	ABSDELTA(a, b)	(((a) >= (b))?((a) - (b)):((b) - (a)))
-#endif
-
 #define		DEFAULT_P				8192
 #define		DEFAULT_I				512
 #define		DEFAULT_D				-24576
