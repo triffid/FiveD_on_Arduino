@@ -218,44 +218,10 @@ uint16_t temp_get() {
 	return current_temp;
 }
 
-uint16_t temp_get_target() {
-	return target_temp;
-}
-
-void temp_print() {
-	if (temp_flags & TEMP_FLAG_TCOPEN) {
-		serial_writestr_P(PSTR("T: no thermocouple!\n"));
-	}
-	else {
-		uint8_t c = 0, t = 0;
-
-		c = (current_temp & 3) * 25;
-		t = (target_temp & 3) * 25;
-		#ifdef REPRAP_HOST_COMPATIBILITY
-		sersendf_P(PSTR("T: %u.%u\n"), current_temp >> 2, c);
-		#else
-		sersendf_P(PSTR("T: %u.%u/%u.%u :%u\n"), current_temp >> 2, c, target_temp >> 2, t, temp_residency);
-		#endif
-	}
-}
-
-void temp_tick() {
-	if (target_temp) {
-		steptimeout = 0;
-
-		temp_read();
-
-		heater_tick(current_temp, target_temp);
-
-		if (ABSDELTA(current_temp, target_temp) > TEMP_HYSTERESIS)
-			temp_residency = 0;
-		else if (temp_residency < TEMP_RESIDENCY_TIME)
-			temp_residency++;
-	}
-}
-
-uint8_t	temp_achieved() {
-	if (temp_residency >= TEMP_RESIDENCY_TIME)
-		return 255;
-	return 0;
+void temp_print(uint8_t index) {
+	uint8_t c = 0;
+	
+	c = (temp_sensors_runtime[index].last_read_temp & 3) * 25;
+	
+	sersendf_P(PSTR("T: %u.%u\n"), temp_sensors_runtime[index].last_read_temp >> 2, c);
 }
