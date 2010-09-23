@@ -326,12 +326,12 @@ void scan_char(uint8_t c) {
 					next_target.N_expected = next_target.N + 1;
 			}
 			else {
-				sersendf_P("Expected checksum %u\n", next_target.checksum_calculated);
+				sersendf_P(PSTR("Expected checksum %u\n"), next_target.checksum_calculated);
 				request_resend();
 			}
 		}
 		else {
-			sersendf_P("Expected line number %lu\n", next_target.N_expected);
+			sersendf_P(PSTR("Expected line number %lu\n"), next_target.N_expected);
 			request_resend();
 		}
 
@@ -516,7 +516,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// unknown gcode: spit an error
 			default:
-				sersendf_P("E: Bad G-code %u\n", gcmd->G);
+				sersendf_P(PSTR("E: Bad G-code %u\n"), gcmd->G);
 		}
 	}
 	else if (gcmd->seen_M) {
@@ -609,7 +609,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// M113- extruder PWM
 			// M114- report XYZEF to host
 			case 114:
-				sersendf_P("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld\n", current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
+				sersendf_P(PSTR("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld\n"), current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
 			 	break;
 
 			// M130- heater P factor
@@ -658,9 +658,9 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			// DEBUG: return current position
 			case 250:
-				sersendf_P("{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld,c:%u}\n", current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F, movebuffer[mb_tail].c);
+				sersendf_P(PSTR("{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld,c:%u}\n"), current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F, movebuffer[mb_tail].c);
 
-				sersendf_P("{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld,c:%u}\n",
+				sersendf_P(PSTR("{X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld,c:%u}\n"),
 						movebuffer[mb_tail].endpoint.X,
 						movebuffer[mb_tail].endpoint.Y,
 						movebuffer[mb_tail].endpoint.Z,
@@ -690,13 +690,13 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// DEBUG: write arbitrary memory locatiom
 			case 254:
 				// FIXME: use sersendf
-				sersendf_P("%x:%x->%x\n", gcmd->S, *(volatile uint8_t *)(gcmd->S),gcmd->P);
+				sersendf_P(PSTR("%x:%x->%x\n"), gcmd->S, *(volatile uint8_t *)(gcmd->S),gcmd->P);
 				(*(volatile uint8_t *)(gcmd->S)) = gcmd->P;
 				break;
 			#endif /* DEBUG */
 			// unknown mcode: spit an error
 			default:
-				sersendf_P("E: Bad M-code %u\n", gcmd->M);
+				sersendf_P(PSTR("E: Bad M-code %u\n"), gcmd->M);
 		}
 	}
 }
@@ -710,5 +710,5 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 ****************************************************************************/
 
 void request_resend(void) {
-	sersendf_P("Resend:%lu\n", next_target.N);
+	sersendf_P(PSTR("Resend:%lu\n"), next_target.N);
 }

@@ -232,5 +232,5 @@ void temp_print(uint8_t index) {
 	
 	c = (temp_sensors_runtime[index].last_read_temp & 3) * 25;
 	
-	sersendf_P("T: %u.%u\n", temp_sensors_runtime[index].last_read_temp >> 2, c);
+	sersendf_P(PSTR("T: %u.%u\n"), temp_sensors_runtime[index].last_read_temp >> 2, c);
 }
