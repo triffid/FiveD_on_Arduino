@@ -26,12 +26,15 @@ typedef enum {
 *                                                                           *
 * Fill in the following two structs according to your hardware              *
 *                                                                           *
+* If your temperature sensor has no associated heater, enter '255' as the   *
+*   heater index.                                                           *
+*                                                                           *
 \***************************************************************************/
 struct {
 	uint8_t						temp_type;
 	uint8_t						temp_pin;
 	
-	int8_t						heater_index;
+	uint8_t						heater_index;
 } temp_sensors[NUM_TEMP_SENSORS] =
 {
 	{
@@ -206,7 +209,7 @@ void temp_sensor_tick() {
 				all_within_range = 0;
 			}
 			
-			if (temp_sensors[i].heater_index) {
+			if (temp_sensors[i].heater_index != 255) {
 				heater_tick(temp_sensors[i].heater_index, temp_sensors_runtime[i].last_read_temp, temp_sensors_runtime[i].target_temp);
 			}
 		}
