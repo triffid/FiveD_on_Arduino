@@ -94,7 +94,7 @@ void init(void) {
 	clock_setup();
 
 	// read PID settings from EEPROM
-	heater_init();
+	temp_heater_init();
 
 	// set up default feedrate
 	current_position.F = startpoint.F = next_target.target.F = SEARCH_FEEDRATE_Z;

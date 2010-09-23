@@ -634,7 +634,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				break;
 			// M134- save PID settings to eeprom
 			case 134:
-				heater_save_settings();
+				temp_heater_save_settings();
 				break;
 
 			// FIXME: check for suitable M-code for this function
