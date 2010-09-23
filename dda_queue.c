@@ -130,13 +130,5 @@ void next_move() {
 }
 
 void print_queue() {
-	serial_writechar('Q');
-	serwrite_uint8(mb_tail);
-	serial_writechar('/');
-	serwrite_uint8(mb_head);
-	if (queue_full())
-		serial_writechar('F');
-	if (queue_empty())
-		serial_writechar('E');
-	serial_writechar('\n');
+	sersendf_P("Q%u/%u %c\n", mb_tail, mb_head, (queue_full())?'F':((queue_empty())?'E':' '));
 }

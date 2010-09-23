@@ -106,13 +106,15 @@ void sersendf_P(PGM_P format, ...) {
 						serwrite_hex16(va_arg(args, uint16_t));
 					j = 0;
 					break;
-/*				case 'c':
+				case 'c':
 					serial_writechar(va_arg(args, uint16_t));
+					break;
 				case 'p':
 					serwrite_hex16(va_arg(args, uint16_t));
+					break;
 				default:
 					j = 0;
-					break;*/
+					break;
 			}
 		}
 		else {
