@@ -89,6 +89,7 @@ void sersendf_P(PGM_P format, ...) {
 						serwrite_uint16(va_arg(args, uint16_t));
 					j = 0;
 					break;
+				case 'i':
 				case 'd':
 					if (j == 4)
 						serwrite_int32(va_arg(args, int32_t));

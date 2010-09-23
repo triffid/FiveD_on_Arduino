@@ -18,6 +18,7 @@
 
 #include "temp.h"
 
+#include	<stdlib.h>
 #include	<avr/eeprom.h>
 
 #include	"machine.h"
@@ -66,83 +67,121 @@ uint16_t temptable[NUMTEMPS][2] PROGMEM = {
 #include	"analog.h"
 #endif
 
-#ifndef	TEMP_MAX6675
-	#ifndef	TEMP_THERMISTOR
-		#ifndef	TEMP_AD595
-			#error none of TEMP_MAX6675, TEMP_THERMISTOR or TEMP_AD595 are defined! What type of temp sensor are you using?
-		#endif
-	#endif
-#endif
-
-uint16_t	current_temp = 0;
-uint16_t	target_temp  = 0;
-
-uint8_t		temp_flags		= 0;
-uint8_t		temp_residency	= 0;
-
-#ifndef	ABSDELTA
-#define	ABSDELTA(a, b)	(((a) >= (b))?((a) - (b)):((b) - (a)))
-#endif
-
-uint16_t temp_read() {
-	uint16_t temp;
-
-#ifdef	TEMP_MAX6675
-	#ifdef	PRR
-		PRR &= ~MASK(PRSPI);
-	#elif defined PRR0
-		PRR0 &= ~MASK(PRSPI);
-	#endif
-
-	SPCR = MASK(MSTR) | MASK(SPE) | MASK(SPR0);
-
-	// enable MAX6675
-	WRITE(SS, 0);
-
-	// ensure 100ns delay - a bit extra is fine
-	delay(1);
-
-	// read MSB
-	SPDR = 0;
-	for (;(SPSR & MASK(SPIF)) == 0;);
-	temp = SPDR;
-	temp <<= 8;
-
-	// read LSB
-	SPDR = 0;
-	for (;(SPSR & MASK(SPIF)) == 0;);
-	temp |= SPDR;
-
-	// disable MAX6675
-	WRITE(SS, 1);
-
-	temp_flags = 0;
-	if ((temp & 0x8002) == 0) {
-		// got "device id"
-		temp_flags |= TEMP_FLAG_PRESENT;
-		if (temp & 4) {
-			// thermocouple open
-			temp_flags |= TEMP_FLAG_TCOPEN;
+void temp_sensor_tick() {
+	uint8_t	i = 0, all_within_range = 1;
+	for (; i < NUM_TEMP_SENSORS; i++) {
+		if (temp_sensors_runtime[i].next_read_time) {
+			temp_sensors_runtime[i].next_read_time--;
 		}
 		else {
-			current_temp = temp >> 3;
-			return current_temp;
-		}
-	}
-#endif	/* TEMP_MAX6675	*/
+			uint16_t	temp = 0;
+			#ifdef	TEMP_THERMISTOR
+			uint8_t		j;
+			#endif
+			//time to deal with this temp/heater
+			switch(temp_sensors[i].temp_type) {
+				#ifdef	TEMP_MAX6675
+				case TT_MAX6675:
+					#ifdef	PRR
+					PRR &= ~MASK(PRSPI);
+					#elif defined PRR0
+					PRR0 &= ~MASK(PRSPI);
+					#endif
+					
+					SPCR = MASK(MSTR) | MASK(SPE) | MASK(SPR0);
+					
+					// enable TT_MAX6675
+					WRITE(SS, 0);
+					
+					// ensure 100ns delay - a bit extra is fine
+					delay(1);
+					
+					// read MSB
+					SPDR = 0;
+					for (;(SPSR & MASK(SPIF)) == 0;);
+					temp = SPDR;
+					temp <<= 8;
+					
+					// read LSB
+					SPDR = 0;
+					for (;(SPSR & MASK(SPIF)) == 0;);
+					temp |= SPDR;
+					
+					// disable TT_MAX6675
+					WRITE(SS, 1);
+					
+					temp_sensors_runtime[i].temp_flags = 0;
+					if ((temp & 0x8002) == 0) {
+						// got "device id"
+						temp_sensors_runtime[i].temp_flags |= PRESENT;
+						if (temp & 4) {
+							// thermocouple open
+							temp_sensors_runtime[i].temp_flags |= TCOPEN;
+						}
+						else {
+							temp = temp >> 3;
+						}
+					}
+					
+					// FIXME: placeholder number
+					temp_sensors_runtime[i].next_read_time = 25;
+					
+					break;
+				#endif	/* TEMP_MAX6675	*/
 
-#ifdef	TEMP_THERMISTOR
-	uint8_t i;
+				#ifdef	TEMP_THERMISTOR
+				case TT_THERMISTOR:
+					
+					//Read current temperature
+					temp = analog_read(temp_sensors[i].temp_pin);
+					
+					//Calculate real temperature based on lookup table
+					for (j = 1; j < NUMTEMPS; j++) {
+						if (pgm_read_word(&(temptable[j][0])) > temp) {
+							// multiply by 4 because internal temp is stored as 14.2 fixed point
+							temp = pgm_read_word(&(temptable[j][1])) + (pgm_read_word(&(temptable[j][0])) - temp) * 4 * (pgm_read_word(&(temptable[j-1][1])) - pgm_read_word(&(temptable[j][1]))) / (pgm_read_word(&(temptable[j][0])) - pgm_read_word(&(temptable[j-1][0])));
+							break;
+						}
+					}
+					
+					//Clamp for overflows
+					if (j == NUMTEMPS)
+						temp = temptable[NUMTEMPS-1][1];
+					
+					// FIXME: placeholder number
+					temp_sensors_runtime[i].next_read_time = 0;
+					
+					break;
+				#endif	/* TEMP_THERMISTOR */
 
-	//Read current temperature
-	temp = analog_read(TEMP_PIN_CHANNEL);
-
-	//Calculate real temperature based on lookup table
-	for (i = 1; i < NUMTEMPS; i++) {
-		if (pgm_read_word(&(temptable[i][0])) > temp) {
-			// multiply by 4 because internal temp is stored as 14.2 fixed point
-			temp = pgm_read_word(&(temptable[i][1])) + (pgm_read_word(&(temptable[i][0])) - temp) * 4 * (pgm_read_word(&(temptable[i-1][1])) - pgm_read_word(&(temptable[i][1]))) / (pgm_read_word(&(temptable[i][0])) - pgm_read_word(&(temptable[i-1][0])));
-			break;
+				#ifdef	TEMP_AD595
+				case TT_AD595:
+					temp = analog_read(temp_pin);
+					
+					// convert
+					// >>8 instead of >>10 because internal temp is stored as 14.2 fixed point
+					temp = (temp * 500L) >> 8;
+					
+					// FIXME: placeholder number
+					temp_sensors[i].next_read_time = 0;
+					
+					break;
+				#endif	/* TEMP_AD595 */
+			}
+			temp_sensors_runtime[i].last_read_temp = temp;
+			
+			if (labs(temp - temp_sensors_runtime[i].target_temp) < TEMP_HYSTERESIS) {
+				if (temp_sensors_runtime[i].temp_residency < TEMP_RESIDENCY_TIME)
+					temp_sensors_runtime[i].temp_residency++;
+			}
+			else {
+				temp_sensors_runtime[i].temp_residency = 0;
+				all_within_range = 0;
+			}
+			
+			if (temp_sensors[i].heater_index) {
+				heater_tick(temp_sensors[i].heater_index, temp_sensors_runtime[i].last_read_temp, temp_sensors_runtime[i].target_temp);
+			}
 		}
 	}
 

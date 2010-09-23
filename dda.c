@@ -1,6 +1,7 @@
 #include	"dda.h"
 
 #include	<string.h>
+#include	<stdlib.h>
 #include	<avr/interrupt.h>
 
 #include	"timer.h"
@@ -9,10 +10,6 @@
 #include	"dda_queue.h"
 #include	"debug.h"
 #include	"sersendf.h"
-
-#ifndef	ABS
-#define	ABS(v)		(((v) >= 0)?(v):(-(v)))
-#endif
 
 /*
 	step timeout
@@ -116,6 +113,11 @@ void dda_create(DDA *dda, TARGET *target) {
 
 	// we end at the passed target
 	memcpy(&(dda->endpoint), target, sizeof(TARGET));
+
+	dda->x_delta = labs(target->X - startpoint.X);
+	dda->y_delta = labs(target->Y - startpoint.Y);
+	dda->z_delta = labs(target->Z - startpoint.Z);
+	dda->e_delta = labs(target->E - startpoint.E);
 
 	dda->x_direction = (target->X >= startpoint.X)?1:0;
 	dda->y_direction = (target->Y >= startpoint.Y)?1:0;
