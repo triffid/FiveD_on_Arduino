@@ -53,12 +53,12 @@
 		Each movement starts at (almost) no speed, linearly accelerates to target speed and decelerates just in time to smoothly stop at the target. alternative to ACCELERATION_REPRAP
 		Can also be set in Makefile
 */
-#define ACCELERATION_RAMPING
+//#define ACCELERATION_RAMPING
 
 // how fast to accelerate when using ACCELERATION_RAMPING
 // smaller values give quicker acceleration
 // valid range = 1 to 8,000,000; 500,000 is a good starting point
-#define ACCELERATION_STEEPNESS	100000
+#define ACCELERATION_STEEPNESS	500000
 
 #ifdef ACCELERATION_REPRAP
 	#ifdef ACCELERATION_RAMPING

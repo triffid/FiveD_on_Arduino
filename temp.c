@@ -94,7 +94,7 @@ uint16_t temp_read() {
 	uint16_t temp;
 
 #ifdef	TEMP_INTERCOM
-	current_temp = get_read_cmd() * 4;
+	temp = current_temp = get_read_cmd() * 4;
 
 	return current_temp;
 #endif
