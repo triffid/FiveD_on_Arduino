@@ -31,6 +31,10 @@
 #include	"debug.h"
 #include	"heater.h"
 
+#ifdef	TEMP_INTERCOM
+#include	"intercom.h"
+#endif
+
 #ifdef	TEMP_MAX6675
 #endif
 
@@ -69,7 +73,9 @@ uint16_t temptable[NUMTEMPS][2] PROGMEM = {
 #ifndef	TEMP_MAX6675
 	#ifndef	TEMP_THERMISTOR
 		#ifndef	TEMP_AD595
-			#error none of TEMP_MAX6675, TEMP_THERMISTOR or TEMP_AD595 are defined! What type of temp sensor are you using?
+			#ifndef TEMP_INTERCOM
+				#error none of TEMP_MAX6675, TEMP_THERMISTOR or TEMP_AD595 are defined! What type of temp sensor are you using?
+			#endif
 		#endif
 	#endif
 #endif
@@ -86,6 +92,12 @@ uint8_t		temp_residency	= 0;
 
 uint16_t temp_read() {
 	uint16_t temp;
+
+#ifdef	TEMP_INTERCOM
+	temp = get_read_cmd();
+
+	return temp;
+#endif
 
 #ifdef	TEMP_MAX6675
 	#ifdef	PRR

@@ -23,11 +23,10 @@
 // again, all numbers are integers
 
 // used for G0 rapid moves and as a cap for all other feedrates
-#define	MAXIMUM_FEEDRATE_XYE	6000
-#define	MAXIMUM_FEEDRATE_Z		50
-
-#define MINIMUM_FEEDRATE_XYE	200
-#define MINIMUM_FEEDRATE_Z		50
+#define	MAXIMUM_FEEDRATE_X	6000
+#define	MAXIMUM_FEEDRATE_Y	6000
+#define	MAXIMUM_FEEDRATE_Z	50
+#define	MAXIMUM_FEEDRATE_E	6000
 
 // used when searching endstops and similar
 #define	SEARCH_FEEDRATE_X	50
