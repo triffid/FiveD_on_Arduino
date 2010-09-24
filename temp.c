@@ -94,9 +94,9 @@ uint16_t temp_read() {
 	uint16_t temp;
 
 #ifdef	TEMP_INTERCOM
-	temp = get_read_cmd();
+	current_temp = get_read_cmd() * 4;
 
-	return temp;
+	return current_temp;
 #endif
 
 #ifdef	TEMP_MAX6675
