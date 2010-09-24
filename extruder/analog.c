@@ -50,12 +50,15 @@ ISR(ADC_vect) {
 }
 
 uint16_t	analog_read(uint8_t channel) {
-	static uint16_t temp;
-
-	//Must disable interrupts because writing to a 16 bit word is not atomic
+	uint8_t sreg;
+	uint16_t r;
+	// save interrupt flag
+	sreg = SREG;
+	// disable interrupts
 	cli();
-	temp = adc_result[channel];
-	sei();
-
-	return temp;
+	// atomic 16-bit copy
+	r = adc_result[channel];
+	// restore interrupt flag
+	SREG = sreg;
+	return r;
 }

@@ -13,6 +13,7 @@
 #include	"watchdog.h"
 #include	"debug.h"
 #include	"heater.h"
+#include	"sersendf.h"
 
 uint8_t last_field = 0;
 
@@ -25,15 +26,6 @@ GCODE_COMMAND next_target		__attribute__ ((__section__ (".bss")));
 /*
 	utility functions
 */
-
-int8_t indexof(uint8_t c, const char *string) {
-	int8_t i;
-	for (i = 0; string[i]; i++) {
-		if (c == string[i])
-			return i;
-	}
-	return -1;
-}
 
 int32_t	decfloat_to_int(decfloat *df, int32_t multiplicand, int32_t denominator) {
 	int32_t	r = df->mantissa;
@@ -258,13 +250,11 @@ void scan_char(uint8_t c) {
 				break;
 			case '*':
 				next_target.seen_checksum = 1;
-// 				option_bitfield |= OPTION_CHECKSUM;
 				break;
 
 			// comments
 			case ';':
 				next_target.seen_semi_comment = 1;
-// 				option_bitfield |= OPTION_COMMENT;
 				break;
 			case '(':
 				next_target.seen_parens_comment = 1;
@@ -459,7 +449,8 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				SpecialMoveXY(-20 * STEPS_PER_MM_X, -20 * STEPS_PER_MM_Y, SEARCH_FEEDRATE_X);
 
 				// wait for queue to complete
-				for (;!queue_empty(););
+				for (;queue_empty() == 0;)
+					wd_reset();
 
 				// this is our home point
 				startpoint.X = startpoint.Y = current_position.X = current_position.Y = 0;
@@ -479,7 +470,8 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				SpecialMoveZ(-20L * STEPS_PER_MM_Z, SEARCH_FEEDRATE_Z);
 
 				// wait for queue to complete
-				for (;queue_empty(););
+				for (;queue_empty() == 0;)
+					wd_reset();
 
 				// this is our home point
 				startpoint.Z = current_position.Z = 0;
@@ -617,17 +609,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// M113- extruder PWM
 			// M114- report XYZEF to host
 			case 114:
-				serial_writestr_P(PSTR("X:"));
-				serwrite_int32(current_position.X);
-				serial_writestr_P(PSTR(",Y:"));
-				serwrite_int32(current_position.Y);
-				serial_writestr_P(PSTR(",Z:"));
-				serwrite_int32(current_position.Z);
-				serial_writestr_P(PSTR(",E:"));
-				serwrite_int32(current_position.E);
-				serial_writestr_P(PSTR(",F:"));
-				serwrite_int32(current_position.F);
-				serial_writechar('\n');
+				sersendf_P("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld\n", current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
 			 	break;
 
 			// M130- heater P factor

@@ -12,7 +12,7 @@
 
 uint8_t adc_running_mask, adc_counter;
 
-volatile uint16_t adc_result[8] __attribute__ ((section ".bss"));
+volatile uint16_t adc_result[8] __attribute__ ((__section__ (".bss")));
 
 void analog_init() {
 	#if ANALOG_MASK > 0
@@ -50,12 +50,15 @@ ISR(ADC_vect) {
 }
 
 uint16_t	analog_read(uint8_t channel) {
-	static uint16_t temp;
-
-	//Must disable interrupts because writing to a 16 bit word is not atomic
+	uint8_t sreg;
+	uint16_t r;
+	// save interrupt flag
+	sreg = SREG;
+	// disable interrupts
 	cli();
-	temp = adc_result[channel];
-	sei();
-
-	return temp;
+	// atomic 16-bit copy
+	r = adc_result[channel];
+	// restore interrupt flag
+	SREG = sreg;
+	return r;
 }

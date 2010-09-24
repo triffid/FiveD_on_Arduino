@@ -32,10 +32,6 @@ int16_t		EEMEM EE_i_limit;
 uint16_t	temp_history[TH_COUNT] __attribute__ ((__section__ (".bss")));
 uint8_t		th_p = 0;
 
-#ifndef	ABSDELTA
-#define	ABSDELTA(a, b)	(((a) >= (b))?((a) - (b)):((b) - (a)))
-#endif
-
 void heater_init() {
 	p_factor = eeprom_read_dword((uint32_t *) &EE_p_factor);
 	i_factor = eeprom_read_dword((uint32_t *) &EE_i_factor);

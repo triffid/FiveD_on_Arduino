@@ -4,8 +4,8 @@
 
 #include	"arduino.h"
 
-#define		BUFSIZE			128
-#define		BAUD			115200
+#define		BUFSIZE			64
+#define		BAUD				115200
 
 #define		ASCII_XOFF	19
 #define		ASCII_XON		17
@@ -71,16 +71,24 @@ void serial_init()
 }
 
 /*
-	Interrupts, UART 0 for mendel
+	Interrupts
 */
 
+#ifdef	USART_RX_vect
+ISR(USART_RX_vect)
+#else
 ISR(USART0_RX_vect)
+#endif
 {
 	if (buf_canwrite(rx))
 		buf_push(rx, UDR0);
 }
 
+#ifdef	USART_UDRE_vect
+ISR(USART_UDRE_vect)
+#else
 ISR(USART0_UDRE_vect)
+#endif
 {
 	#ifdef	XONXOFF
 	if (flowflags & FLOWFLAG_SEND_XON) {

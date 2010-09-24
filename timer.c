@@ -94,22 +94,26 @@ uint16_t getTimerCeiling(const uint32_t delay)
 
 void setTimer(uint32_t delay)
 {
-	// delay is the delay between steps in microsecond ticks.
+	// delay is the delay between steps in IOclk ticks.
 	//
 	// we break it into 5 different resolutions based on the delay.
 	// then we set the resolution based on the size of the delay.
 	// we also then calculate the timer ceiling required. (ie what the counter counts to)
 	// the result is the timer counts up to the appropriate time and then fires an interrupt.
 
-	setTimerCeiling(getTimerCeiling(delay));
-	setTimerResolution(getTimerResolution(delay));
+	setTimerResolution(0);													// stop timer
+	TCNT1 = 0;																			// reset timer
+	GTCCR = MASK(PSRSYNC);													// reset prescaler - affects timer 0 too but since it's doing PWM, it's not using the prescaler
+
+	setTimerCeiling(getTimerCeiling(delay));				// set timeout
+	setTimerResolution(getTimerResolution(delay));	// restart timer with proper prescaler
 }
 
 // delay( microseconds )
 void delay(uint32_t delay) {
 	wd_reset();
 	while (delay > 65535) {
-		delayMicrosecondsInterruptible(65534);
+		delayMicrosecondsInterruptible(65533);
 		delay -= 65535;
 		wd_reset();
 	}
