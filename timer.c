@@ -79,6 +79,7 @@ void setTimer(uint32_t delay)
 		next_step_time = delay + TCNT1;
 		if (delay <= 16) {
 			// force interrupt
+			// FIXME: datasheet says force compare doesn't work in CTC mode, find best way to do this
 			TIMSK1 |= MASK(OCIE1B);
 			TCCR1C |= MASK(FOC1B);
 		}
