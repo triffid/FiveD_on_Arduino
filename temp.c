@@ -22,7 +22,6 @@
 	#include	<avr/eeprom.h>
 #endif
 
-#include	"clock.h"
 #include	"serial.h"
 #include	"sermsg.h"
 #include	"timer.h"

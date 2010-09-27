@@ -55,6 +55,14 @@ void queue_step() {
 	// the dda dies not directly after its last step, but when the timer fires and there's no steps to do
 	if (movebuffer[mb_tail].live == 0)
 		next_move();
+
+	#if STEP_INTERRUPT_INTERRUPTIBLE
+		cli();
+	#endif
+	// check queue, if empty we don't need to interrupt again until re-enabled in dda_create
+	if (queue_empty() != 0)
+		setTimer(0);
+// 		enableTimerInterrupt();
 }
 
 void enqueue(TARGET *t) {
