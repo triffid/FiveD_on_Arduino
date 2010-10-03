@@ -169,6 +169,15 @@ firmware build options
 #define	FAN_PWM								OCR0B
 
 // --------------------------------------------------------------------------
+// Greycode. Define if your electronics set coil polarity directly, instead of
+// sending step/direcitno signals.
+#define X_GREYCODE
+#define Y_GREYCODE
+#define Z_GREYCODE
+//#define E_GREYCODE
+
+
+// --------------------------------------------------------------------------
 // you shouldn't need to edit anything below this line
 
 // same as above with 25.4 scale factor
@@ -187,10 +196,19 @@ firmware build options
 /*
 	X Stepper
 */
-
-#define	_x_step(st)						WRITE(X_STEP_PIN, st)
-#define	x_step()							_x_step(1);
-#define	x_direction(dir)			WRITE(X_DIR_PIN, dir)
+#ifdef X_GREYCODE
+	#define x_step()                        {\
+												x_greycode+=stored_x_direction;\
+												WRITE(X_STEP_PIN,x_greycode&1);\
+												WRITE(X_DIR_PIN,((x_greycode>>1)^x_greycode)&1);\
+											}
+	#define _x_step(st)                     (0)
+	#define x_direction(dir)                stored_x_direction=(dir)?0:-1
+#else
+	#define	_x_step(st)					WRITE(X_STEP_PIN, st)
+	#define	x_step()							_x_step(1);
+	#define	x_direction(dir)			WRITE(X_DIR_PIN, dir)
+#endif
 #define	x_min()								READ(X_MIN_PIN)
 #ifdef	X_MAX_PIN
 	#define	x_max()							READ(X_MAX_PIN)
@@ -202,9 +220,19 @@ firmware build options
 	Y Stepper
 */
 
-#define	_y_step(st)						WRITE(Y_STEP_PIN, st)
-#define	y_step()							_y_step(1);
-#define	y_direction(dir)			WRITE(Y_DIR_PIN, dir)
+#ifdef Y_GREYCODE
+	#define y_step()                        {\
+												y_greycode+=stored_y_direction;\
+												WRITE(Y_STEP_PIN,y_greycode&1);\
+												WRITE(Y_DIR_PIN,((y_greycode>>1)^y_greycode)&1);\
+											}
+	#define _y_step(st)                     (0)
+	#define y_direction(dir)                stored_y_direction=(dir)?0:-1
+#else
+	#define	_y_step(st)					WRITE(Y_STEP_PIN, st)
+	#define	y_step()							_y_step(1);
+	#define	y_direction(dir)			WRITE(Y_DIR_PIN, dir)
+#endif
 #define	y_min()								READ(Y_MIN_PIN)
 #ifdef	Y_MAX_PIN
 	#define	y_max()							READ(Y_MAX_PIN)
@@ -216,9 +244,19 @@ firmware build options
 	Z Stepper
 */
 
-#define	_z_step(st)						WRITE(Z_STEP_PIN, st)
-#define	z_step()							_z_step(1);
-#define	z_direction(dir)			WRITE(Z_DIR_PIN, dir)
+#ifdef Z_GREYCODE
+	#define z_step()                        {\
+												z_greycode+=stored_z_direction;\
+												WRITE(Z_STEP_PIN,z_greycode&1);\
+												WRITE(Z_DIR_PIN,((z_greycode>>1)^z_greycode)&1);\
+											}
+	#define _z_step(st)                     (0)
+	#define z_direction(dir)                stored_z_direction=(dir)?0:-1
+#else
+	#define	_z_step(st)					WRITE(Z_STEP_PIN, st)
+	#define	z_step()							_z_step(1);
+	#define	z_direction(dir)			WRITE(Z_DIR_PIN, dir)
+#endif
 #define	z_min()								READ(Z_MIN_PIN)
 #ifdef	Z_MAX_PIN
 	#define	z_max()							READ(Z_MAX_PIN)
@@ -230,9 +268,19 @@ firmware build options
 	Extruder
 */
 
-#define	_e_step(st)						WRITE(E_STEP_PIN, st)
-#define	e_step()							_e_step(1);
-#define	e_direction(dir)			WRITE(E_DIR_PIN, dir)
+#ifdef E_GREYCODE
+	#define e_step()                        {\
+												e_greycode+=stored_e_direction;\
+												WRITE(E_STEP_PIN,e_greycode&1);\
+												WRITE(E_DIR_PIN,((e_greycode>>1)^e_greycode)&1);\
+											}
+	#define _e_step(st)                     (0)
+	#define e_direction(dir)                stored_e_direction=(dir)?0:-1
+#else
+	#define	_e_step(st)					WRITE(E_STEP_PIN, st)
+	#define	e_step()							_e_step(1);
+	#define	e_direction(dir)			WRITE(E_DIR_PIN, dir)
+#endif
 
 /*
 	Heater

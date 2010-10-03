@@ -21,6 +21,27 @@
 uint8_t	steptimeout = 0;
 
 /*
+	Greycode tracking variables
+*/
+
+#ifdef X_GREYCODE
+uint8_t stored_x_direction;
+uint8_t x_greycode;
+#endif
+#ifdef Y_GREYCODE
+uint8_t stored_y_direction;
+uint8_t y_greycode;
+#endif
+#ifdef Z_GREYCODE
+uint8_t stored_z_direction;
+uint8_t z_greycode;
+#endif
+#ifdef E_GREYCODE
+uint8_t stored_e_direction;
+uint8_t e_greycode;
+#endif
+
+/*
 	position tracking
 */
 
