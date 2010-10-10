@@ -90,33 +90,6 @@ void enqueue(TARGET *t) {
 		setTimer(16);
 }
 
-void enqueue_temp_wait() {
-	// don't call this function when the queue is full, but just in case, wait for a move to complete and free up the space for the passed target
-	while (queue_full())
-		delay(WAITING_DELAY);
-
-	uint8_t h = mb_head + 1;
-	h &= (MOVEBUFFER_SIZE - 1);
-
-	// wait for temp flag
-	movebuffer[h].waitfor_temp = 1;
-	movebuffer[h].nullmove = 0;
-	#if (F_CPU & 0xFF000000) == 0
-		// set "step" timeout to 1 second
-		movebuffer[h].c = F_CPU << 8;
-	#else
-		// set "step" timeout to maximum
-		movebuffer[h].c = 0xFFFFFF00;
-	#endif
-
-	mb_head = h;
-
-	// fire up in case we're not running yet
-// 	enableTimerInterrupt();
-	if (queue_empty())
-		setTimer(16);
-}
-
 // sometimes called from normal program execution, sometimes from interrupt context
 void next_move() {
 	if (queue_empty() == 0) {
@@ -127,7 +100,7 @@ void next_move() {
 		mb_tail = t;
 	}
 	else
-		disableTimerInterrupt();
+		setTimer(0);
 }
 
 void print_queue() {

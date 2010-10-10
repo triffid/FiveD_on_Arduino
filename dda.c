@@ -410,7 +410,7 @@ void dda_start(DDA *dda) {
 
 		// set timeout for first step
 		setTimer(dda->c >> 8);
-		enableTimerInterrupt();
+// 		enableTimerInterrupt();
 	}
 }
 
