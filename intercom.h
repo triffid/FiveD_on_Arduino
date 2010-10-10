@@ -1,11 +1,12 @@
 #ifndef	_INTERCOM_H
 #define	_INTERCOM_H
 
+#ifdef	GEN3
+
 #include	<stdint.h>
 #include	<avr/io.h>
 #include	<avr/pgmspace.h>
 #include	<avr/interrupt.h>
-
 
 // initialise serial subsystem
 void intercom_init(void);
@@ -17,5 +18,7 @@ void start_send(void);
 
 //Read the message we are receiving over intercom
 uint8_t get_read_cmd(void);
+
+#endif
 
 #endif	/* _INTERCOM_H */

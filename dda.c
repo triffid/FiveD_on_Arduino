@@ -397,6 +397,9 @@ void dda_start(DDA *dda) {
 			// ensure steppers are ready to go
 			steptimeout = 0;
 			power_on();
+			#ifdef	GEN3
+				WRITE(Z_ENABLE_PIN, 0);
+			#endif
 
 			// set direction outputs
 			x_direction(dda->x_direction);

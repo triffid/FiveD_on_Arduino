@@ -140,7 +140,11 @@ void clock_250ms(void) {
 	temp_tick();
 
 	if (steptimeout > (30 * 4)) {
-		power_off();
+		#ifndef	GEN3
+			power_off();
+		#else
+			WRITE(Z_ENABLE_PIN, 1);
+		#endif
 	}
 	else
 		steptimeout++;
