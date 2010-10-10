@@ -5,8 +5,8 @@
 #include	<avr/io.h>
 #include	<avr/interrupt.h>
 
-#include "pinout.h"
-#include "timer.h"
+#include "config.h"
+// #include "timer.h"
 #include "intercom.h"
 #include "analog.h"
 #include "watchdog.h"

@@ -14,7 +14,7 @@
 
 PROGRAM = extruder
 
-SOURCES = $(PROGRAM).c intercom.c watchdog.c timer.c analog.c
+SOURCES = $(PROGRAM).c intercom.c watchdog.c delay.c analog.c
 
 ##############################################################################
 #                                                                            #
@@ -36,7 +36,7 @@ CC = $(ARCH)gcc
 OBJDUMP = $(ARCH)objdump
 OBJCOPY = $(ARCH)objcopy
 
-DEFS = -DF_CPU=$(F_CPU) -DEXTRUDER
+DEFS = -DF_CPU=$(F_CPU) -DGEN3 -DEXTRUDER
 # DEFS += "-DDEBUG=1"
 
 OPTIMIZE = -Os -ffunction-sections -finline-functions-called-once

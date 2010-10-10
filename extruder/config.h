@@ -6,7 +6,7 @@
 
 //RS485 Interface pins
 #define RX_ENABLE_PIN DIO4
-#define TX_ENABLE_PIN DIO16
+#define TX_ENABLE_PIN AIO2
 
 // Control pins for the A3949 chips
 #define H1D DIO7
@@ -49,6 +49,8 @@
 #define BED_PIN							DIO12						
 
 #define ANALOG_MASK	(MASK(TRIM_POT_CHANNEL) | MASK(TEMP_PIN_CHANNEL))
+
+#define	REFERENCE REFERENCE_AREF
 
 /*
 	Intercom

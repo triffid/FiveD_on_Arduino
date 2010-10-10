@@ -3,7 +3,7 @@
 #ifdef	GEN3
 
 #include	"config.h"
-#include	"timer.h"
+#include	"delay.h"
 
 
 #define		INTERCOM_BAUD			19200
