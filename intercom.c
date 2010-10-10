@@ -1,7 +1,8 @@
 #include	"intercom.h"
 
-#include	"arduino.h"
-#include	"pinout.h"
+#ifdef	GEN3
+
+#include	"config.h"
 #include	"timer.h"
 
 
@@ -231,3 +232,5 @@ ISR(USART_UDRE_vect)
 			break;
 	}
 }
+
+#endif	/* GEN3 */

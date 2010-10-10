@@ -8,6 +8,9 @@
 
 #include	"sersendf.h"
 #include	"debug.h"
+#ifdef	GEN3
+	#include	"intercom.h"
+#endif
 
 int16_t		heater_p     = 0;
 int16_t		heater_i     = 0;
@@ -95,14 +98,16 @@ void heater_tick(int16_t current_temp, int16_t target_temp) {
 	
 	if (debug_flags & DEBUG_PID)
 		sersendf_P(PSTR("T{E:%d, P:%d * %ld = %ld / I:%d * %ld = %ld / D:%d * %ld = %ld # O: %ld = %u}\n"), t_error, heater_p, p_factor, (int32_t) heater_p * p_factor / PID_SCALE, heater_i, i_factor, (int32_t) heater_i * i_factor / PID_SCALE, heater_d, d_factor, (int32_t) heater_d * d_factor / PID_SCALE, pid_output_intermed, pid_output);
-	
-	#ifdef	HEATER_PWM
-	HEATER_PWM = pid_output;
+
+	#ifdef	GEN3
+		update_send_cmd(pid_output);
+	#elif defined	HEATER_PWM
+		HEATER_PWM = pid_output;
 	#else
-	if (pid_output >= 8)
-		enable_heater();
-	else
-		disable_heater();
+		if (pid_output >= 8)
+			enable_heater();
+		else
+			disable_heater();
 	#endif
 }
 

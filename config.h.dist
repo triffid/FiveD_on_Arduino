@@ -226,6 +226,12 @@
 #define	FAN_PIN								DIO5
 #define	FAN_PWM								OCR0B
 
+// for gen3
+#ifdef	GEN3
+	#define	TX_ENABLE_PIN				DIO12
+	#define	RX_ENABLE_PIN				DIO13
+#endif
+
 // --------------------------------------------------------------------------
 // you shouldn't need to edit anything below this line
 

@@ -14,7 +14,7 @@
 
 PROGRAM = mendel
 
-SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c clock.c timer.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c delay.c
+SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c clock.c timer.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c delay.c intercom.c
 
 ##############################################################################
 #                                                                            #
@@ -22,7 +22,7 @@ SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c clock.c time
 #                                                                            #
 ##############################################################################
 
-MCU_TARGET = atmega328p
+MCU_TARGET = atmega644p
 F_CPU = 16000000L
 
 ##############################################################################
@@ -48,10 +48,12 @@ OBJCOPY = $(ARCH)objcopy
 #   enables reprap-style acceleration                                        #
 # ACCELERATION_RAMPING                                                       #
 #   enables start/stop ramping                                               #
+# GEN3                                                                       #
+#   build for standard reprap electronics instead of your custom rig         #
 #                                                                            #
 ##############################################################################
 
-DEFS = -DF_CPU=$(F_CPU)
+DEFS = -DF_CPU=$(F_CPU) -DHOST
 # DEFS += "-DDEBUG=1"
 
 OPTIMIZE = -Os -ffunction-sections -finline-functions-called-once

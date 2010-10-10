@@ -66,12 +66,12 @@ uint16_t temptable[NUMTEMPS][2] PROGMEM = {
 #include	"analog.h"
 #endif
 
-#ifndef	TEMP_MAX6675
-	#ifndef	TEMP_THERMISTOR
-		#ifndef	TEMP_AD595
-			#error none of TEMP_MAX6675, TEMP_THERMISTOR or TEMP_AD595 are defined! What type of temp sensor are you using?
-		#endif
-	#endif
+#ifdef	GEN3
+#include	"intercom.h"
+#endif
+
+#if !defined TEMP_MAX6675 && !defined TEMP_THERMISTOR && !defined TEMP_AD595 && !defined GEN3
+	#error none of TEMP_MAX6675, TEMP_THERMISTOR or TEMP_AD595 or GEN3 are defined! What type of temp sensor are you using?
 #endif
 
 #include "simulation.h"
@@ -165,6 +165,10 @@ uint16_t temp_read() {
 	
 	return temp;
 #endif	/* TEMP_AD595 */
+
+#ifdef	GEN3
+	temp = get_read_cmd() * 4;
+#endif	/* GEN3 */
 
 	return 0;
 }
