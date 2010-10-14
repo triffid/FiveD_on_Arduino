@@ -23,6 +23,7 @@ SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c temp.c sermsg.c dd
 ##############################################################################
 
 MCU_TARGET = atmega328p
+PMCU_TARGET = m168
 F_CPU = 16000000L
 
 ##############################################################################
@@ -71,7 +72,7 @@ AVRDUDECONF = /etc/avrdude.conf
 #                                                                            #
 ##############################################################################
 PROGPORT = /dev/arduino
-PROGBAUD = 57600
+PROGBAUD = 19200
 
 OBJ = $(patsubst %.c,%.o,${SOURCES})
 
@@ -84,7 +85,7 @@ program: config.h $(PROGRAM).hex
 	stty $(PROGBAUD) raw ignbrk hup < $(PROGPORT)
 	@sleep 0.1
 	@stty $(PROGBAUD) raw ignbrk hup < $(PROGPORT)
-	$(AVRDUDE) -cstk500v1 -b$(PROGBAUD) -p$(MCU_TARGET) -P$(PROGPORT) -C$(AVRDUDECONF) -U flash:w:$(PROGRAM).hex
+	$(AVRDUDE) -cstk500v1 -b$(PROGBAUD) -p$(PMCU_TARGET) -P$(PROGPORT) -C$(AVRDUDECONF) -U flash:w:$(PROGRAM).hex -F
 	stty 115200 raw ignbrk -hup -echo ixoff < $(PROGPORT)
 
 clean:
