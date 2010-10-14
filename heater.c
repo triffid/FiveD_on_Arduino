@@ -1,11 +1,11 @@
 #include	"heater.h"
 
+#ifdef HEATER_PIN
+
 #include	<avr/eeprom.h>
 
 #include	"sersendf.h"
-#include	"config.h"
 #include	"debug.h"
-#include	"arduino.h"
 
 int16_t		heater_p     = 0;
 int16_t		heater_i     = 0;
@@ -103,3 +103,5 @@ void heater_tick(int16_t current_temp, int16_t target_temp) {
 		disable_heater();
 	#endif
 }
+
+#endif	/* HEATER_PIN */

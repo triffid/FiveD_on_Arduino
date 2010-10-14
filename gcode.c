@@ -14,6 +14,35 @@
 #include	"debug.h"
 #include	"heater.h"
 #include	"sersendf.h"
+#include	"delay.h"
+
+/*
+	Switch user friendly values to coding friendly values
+
+	This also affects the possible build volume. We have +-2^31 numbers available and as we internally measure position in steps and use a precision factor of 1000, this translates into a possible range of
+
+		2^31 mm / STEPS_PER_MM_x / 1000
+
+	for each axis. For a M6 threaded rod driven machine and 1/16 microstepping this evaluates to
+
+		2^31 mm / 200 / 1 / 16 / 1000 = 671 mm,
+
+	which is about the worst case we have. All other machines have a bigger build volume.
+*/
+
+#define	STEPS_PER_M_X			((uint32_t) (STEPS_PER_MM_X * 1000.0))
+#define	STEPS_PER_M_Y			((uint32_t) (STEPS_PER_MM_Y * 1000.0))
+#define	STEPS_PER_M_Z			((uint32_t) (STEPS_PER_MM_Z * 1000.0))
+#define	STEPS_PER_M_E			((uint32_t) (STEPS_PER_MM_E * 1000.0))
+
+/*
+	mm -> inch conversion
+*/
+
+#define	STEPS_PER_IN_X		((uint32_t) ((25.4 * STEPS_PER_MM_X) + 0.5))
+#define	STEPS_PER_IN_Y		((uint32_t) ((25.4 * STEPS_PER_MM_Y) + 0.5))
+#define	STEPS_PER_IN_Z		((uint32_t) ((25.4 * STEPS_PER_MM_Z) + 0.5))
+#define	STEPS_PER_IN_E		((uint32_t) ((25.4 * STEPS_PER_MM_E) + 0.5))
 
 uint8_t last_field = 0;
 
@@ -125,7 +154,7 @@ void scan_char(uint8_t c) {
 					if (next_target.option_inches)
 						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_IN_X, 1);
 					else
-						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_MM_X, 1);
+						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_M_X, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.X);
 					break;
@@ -133,7 +162,7 @@ void scan_char(uint8_t c) {
 					if (next_target.option_inches)
 						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_IN_Y, 1);
 					else
-						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_MM_Y, 1);
+						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_M_Y, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.Y);
 					break;
@@ -141,7 +170,7 @@ void scan_char(uint8_t c) {
 					if (next_target.option_inches)
 						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_IN_Z, 1);
 					else
-						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_MM_Z, 1);
+						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.Z);
 					break;
@@ -149,7 +178,7 @@ void scan_char(uint8_t c) {
 					if (next_target.option_inches)
 						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 1);
 					else
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_MM_E, 1);
+						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint32(next_target.target.E);
 					break;
@@ -168,9 +197,11 @@ void scan_char(uint8_t c) {
 					// but it takes less code, less memory and loses no precision if we do it here instead
 					if ((next_target.M == 104) || (next_target.M == 109))
 						next_target.S = decfloat_to_int(&read_digit, 4, 1);
+					#ifdef	HEATER_PIN
 					// if this is heater PID stuff, multiply by PID_SCALE because we divide by PID_SCALE later on
 					else if ((next_target.M >= 130) && (next_target.M <= 132))
 						next_target.S = decfloat_to_int(&read_digit, PID_SCALE, 1);
+					#endif
 					else
 						next_target.S = decfloat_to_int(&read_digit, 1, 1);
 					if (debug_flags & DEBUG_ECHO)
@@ -411,17 +442,11 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 
 			//	G4 - Dwell
 			case 4:
-				#ifdef	XONXOFF
-				xoff();
-				#endif
 				// wait for all moves to complete
 				for (;queue_empty() == 0;)
 					wd_reset();
 				// delay
 				delay_ms(gcmd->P);
-				#ifdef	XONXOFF
-				xon();
-				#endif
 				break;
 
 			//	G20 - inches as units
@@ -615,6 +640,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 				sersendf_P("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld\n", current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
 			 	break;
 
+			#ifdef	HEATER_PIN
 			// M130- heater P factor
 			case 130:
 				if (gcmd->seen_S)
@@ -638,6 +664,35 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// M134- save PID settings to eeprom
 			case 134:
 				heater_save_settings();
+				break;
+			#endif	/* HEATER_PIN */
+
+			// M190- power on
+			case 190:
+				power_on();
+				#ifdef	X_ENABLE_PIN
+					WRITE(X_ENABLE_PIN, 0);
+				#endif
+				#ifdef	Y_ENABLE_PIN
+					WRITE(Y_ENABLE_PIN, 0);
+				#endif
+				#ifdef	Z_ENABLE_PIN
+					WRITE(Z_ENABLE_PIN, 0);
+				#endif
+				steptimeout = 0;
+				break;
+			// M191- power off
+			case 191:
+				#ifdef	X_ENABLE_PIN
+					WRITE(X_ENABLE_PIN, 1);
+				#endif
+				#ifdef	Y_ENABLE_PIN
+					WRITE(Y_ENABLE_PIN, 1);
+				#endif
+				#ifdef	Z_ENABLE_PIN
+					WRITE(Z_ENABLE_PIN, 1);
+				#endif
+				power_off();
 				break;
 
 			#ifdef	DEBUG
@@ -729,7 +784,11 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 ****************************************************************************/
 
 void request_resend(void) {
+	#if defined REPRAP_HOST_COMPATIBILITY && REPRAP_HOST_COMPATIBILITY >= 20100806
+	serial_writestr_P(PSTR("rs "));
+	#else
 	serial_writestr_P(PSTR("Resend:"));
+	#endif
 	serwrite_uint8(next_target.N);
 	serial_writechar('\n');
 }
