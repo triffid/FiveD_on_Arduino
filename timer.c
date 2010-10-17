@@ -11,9 +11,12 @@ uint8_t						clock_counter_250ms = 0;
 uint8_t						clock_counter_1s = 0;
 volatile uint8_t	clock_flag = 0;
 
+// how often we overflow and update our clock; with F_CPU=16MHz, max is 4ms
+#define		TICK_TIME		2 MS
+
 ISR(TIMER1_COMPA_vect) {
-	if (next_step_time > 64000)
-		next_step_time -= 64000;
+	if (next_step_time > TICK_TIME)
+		next_step_time -= TICK_TIME;
 	else {
 		if (next_step_time > 0) {
 			OCR1B = next_step_time & 0xFFFF;
@@ -35,7 +38,7 @@ ISR(TIMER1_COMPB_vect) {
 	/*
 		clock stuff
 	*/
-	clock_counter_250ms += 2;
+	clock_counter_250ms += TICK_TIME / (F_CPU / 1000);
 	if (clock_counter_250ms >= 250) {
 		clock_counter_250ms -= 250;
 		clock_flag |= CLOCK_FLAG_250MS;
@@ -63,8 +66,7 @@ void timer_init()
 	TCCR1B = MASK(WGM12) | MASK(CS10);
 	// COMPA interrupt only
 	TIMSK1 = MASK(OCIE1A);
-	// F_CPU / 250 = 2ms
-	OCR1A = F_CPU / 500;
+	OCR1A = TICK_TIME;
 }
 
 void setTimer(uint32_t delay)
@@ -83,7 +85,8 @@ void setTimer(uint32_t delay)
 			TIMSK1 |= MASK(OCIE1B);
 			TCCR1C |= MASK(FOC1B);
 		}
-		else if (delay <= 64000) {
+		else if (delay <= TICK_TIME) {
+			OCR1B = next_step_time & 0xFFFF;
 			TIMSK1 |= MASK(OCIE1B);
 		}
 	}
@@ -100,4 +103,6 @@ void timer_stop() {
 	TIMSK1 = 0;
 	// turn timer off
 	TCCR1B = 0;
+	// reset timeout
+	next_step_time = 0;
 }
