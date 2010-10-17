@@ -6,11 +6,15 @@
 #include	"watchdog.h"
 
 ISR(TIMER1_COMPA_vect) {
+	#ifdef TEMP_MAX6675
 	WRITE(SCK, 1);
+	#endif
 
 	queue_step();
 
+	#ifdef TEMP_MAX6675
 	WRITE(SCK, 0);
+	#endif
 }
 
 void setupTimerInterrupt()
