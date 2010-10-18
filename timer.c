@@ -11,34 +11,27 @@ uint8_t						clock_counter_250ms = 0;
 uint8_t						clock_counter_1s = 0;
 volatile uint8_t	clock_flag = 0;
 
-// how often we overflow and update our clock; with F_CPU=16MHz, max is 4ms
+// how often we overflow and update our clock; with F_CPU=16MHz, max is < 4.096ms (TICK_TIME = 65535)
 #define		TICK_TIME		2 MS
 
-ISR(TIMER1_COMPA_vect) {
+// timer overflow, happens every TICK_TIME
+ISR(TIMER1_CAPT_vect) {
+	/*
+		check if next step time will occur before next overflow
+	*/
 	if (next_step_time > TICK_TIME)
 		next_step_time -= TICK_TIME;
 	else {
 		if (next_step_time > 0) {
-			OCR1B = next_step_time & 0xFFFF;
-			TIMSK1 |= MASK(OCIE1B);
+			OCR1A = next_step_time & 0xFFFF;
+			TIMSK1 |= MASK(OCIE1A);
 		}
 	}
-}
-
-ISR(TIMER1_COMPB_vect) {
-	// led on
-	WRITE(SCK, 1);
-
-	// disable this interrupt. if we set a new timeout, it will be re-enabled when appropriate
-	TIMSK1 &= ~MASK(OCIE1B);
-
-	// ensure we don't interrupt again unless timer is reset
-	next_step_time = 0;
 
 	/*
-		clock stuff
+	clock stuff
 	*/
-	clock_counter_250ms += TICK_TIME / (F_CPU / 1000);
+	clock_counter_250ms += (TICK_TIME / (F_CPU / 1000));
 	if (clock_counter_250ms >= 250) {
 		clock_counter_250ms -= 250;
 		clock_flag |= CLOCK_FLAG_250MS;
@@ -48,6 +41,17 @@ ISR(TIMER1_COMPB_vect) {
 			clock_flag |= CLOCK_FLAG_1S;
 		}
 	}
+}
+
+ISR(TIMER1_COMPA_vect) {
+	// led on
+	WRITE(SCK, 1);
+
+	// disable this interrupt. if we set a new timeout, it will be re-enabled when appropriate
+	TIMSK1 &= ~MASK(OCIE1A);
+
+	// ensure we don't interrupt again unless timer is reset
+	next_step_time = 0;
 
 	/*
 		stepper tick
@@ -62,11 +66,12 @@ void timer_init()
 {
 	// no outputs
 	TCCR1A = 0;
-	// CTC mode
-	TCCR1B = MASK(WGM12) | MASK(CS10);
-	// COMPA interrupt only
-	TIMSK1 = MASK(OCIE1A);
-	OCR1A = TICK_TIME;
+	// CTC mode- use ICR for top
+	TCCR1B = MASK(WGM13) | MASK(WGM12) | MASK(CS10);
+	// set timeout- first timeout is indeterminate, probably doesn't matter
+	ICR1 = TICK_TIME;
+	// overflow interrupt (uses input capture interrupt in CTC:ICR mode)
+	TIMSK1 = MASK(ICIE1);
 }
 
 void setTimer(uint32_t delay)
@@ -82,12 +87,13 @@ void setTimer(uint32_t delay)
 		if (delay <= 16) {
 			// force interrupt
 			// FIXME: datasheet says force compare doesn't work in CTC mode, find best way to do this
-			TIMSK1 |= MASK(OCIE1B);
-			TCCR1C |= MASK(FOC1B);
+			// TODO: datasheet says force only doesn't work in CTC:COMPA mode, test if CTC:ICR mode allows force
+			TIMSK1 |= MASK(OCIE1A);
+			TCCR1C |= MASK(FOC1A);
 		}
 		else if (delay <= TICK_TIME) {
-			OCR1B = next_step_time & 0xFFFF;
-			TIMSK1 |= MASK(OCIE1B);
+			OCR1A = next_step_time & 0xFFFF;
+			TIMSK1 |= MASK(OCIE1A);
 		}
 	}
 	else {
@@ -101,8 +107,6 @@ void setTimer(uint32_t delay)
 void timer_stop() {
 	// disable all interrupts
 	TIMSK1 = 0;
-	// turn timer off
-	TCCR1B = 0;
 	// reset timeout
 	next_step_time = 0;
 }
