@@ -637,7 +637,12 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			// M113- extruder PWM
 			// M114- report XYZEF to host
 			case 114:
-				sersendf_P("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld\n", current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
+				sersendf_P("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%lu\n",
+					(long int)current_position.X,
+					(long int)current_position.Y,
+					(long int)current_position.Z,
+					(long int)current_position.E,
+					(long unsigned int)current_position.F);
 			 	break;
 
 			#ifdef	HEATER_PIN
