@@ -4,8 +4,9 @@
 
 #include "simulation.h"
 
-uint8_t ACSR;
-uint8_t TIMSK1;
+volatile uint8_t ACSR;
+volatile uint8_t SREG;
+volatile uint8_t TIMSK1;
 
 
 /* -- debugging ------------------------------------------------------------ */
@@ -40,7 +41,14 @@ void sim_assert(bool cond, const char msg[])
 volatile bool sim_interrupts = false;
 void sei(void)
 {
+	SREG |= MASK(SREG_I);
 	sim_interrupts = true;
+}
+
+void cli(void)
+{
+	SREG &= ~MASK(SREG_I);
+	sim_interrupts = false;
 }
 
 

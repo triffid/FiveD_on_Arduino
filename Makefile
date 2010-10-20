@@ -14,7 +14,7 @@
 
 PROGRAM = mendel
 
-SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c delay.c
+SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c clock.c timer.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c delay.c
 
 ##############################################################################
 #                                                                            #
@@ -132,8 +132,8 @@ config.h: config.h.dist
 #                                                                            #
 ##############################################################################
 
-SIM_SOURCES = $(PROGRAM).c serial_sim.c dda.c gcode.c timer_sim.c clock_sim.c temp.c sermsg.c dda_queue.c debug.c sersendf.c heater.c analog_sim.c delay_sim.c simulation.c
-SIM_HEADERS = config.h serial.h dda.h gcode.h timer.h clock.h temp.h sermsg.h dda_queue.h debug.h sersendf.h heater.h analog.h delay.h simulation.h
+SIM_SOURCES = $(PROGRAM).c serial_sim.c dda.c gcode_parse.c gcode_process.c clock_sim.c timer_sim.c temp.c sermsg.c dda_queue.c debug.c sersendf.c heater.c analog_sim.c delay_sim.c simulation.c
+SIM_HEADERS = config.h serial.h dda.h gcode_parse.h gcode_process.c clock.h timer.h temp.h sermsg.h dda_queue.h debug.h sersendf.h heater.h analog.h delay.h simulation.h
 
 SIM_OBJ = $(patsubst %.c,%.sim.o,${SIM_SOURCES})
 SIM_CFLAGS = -g -Wall -Wstrict-prototypes -Os $(DEFS) -std=gnu99 -funsigned-char -funsigned-bitfields -fshort-enums

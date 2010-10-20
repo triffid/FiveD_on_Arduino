@@ -8,7 +8,7 @@
 #include	"serial.h"
 #include	"dda_queue.h"
 #include	"dda.h"
-#include	"gcode.h"
+#include	"gcode_parse.h"
 #include	"timer.h"
 #include	"clock.h"
 #include	"temp.h"
@@ -147,9 +147,12 @@ void clock_250ms(void) {
 			// Queue
 			print_queue();
 		}
-		// temperature
-		if (temp_get_target())
-			temp_print();
+		
+		#ifndef	REPRAP_HOST_COMPATIBILITY
+			// temperature
+			if (temp_get_target())
+				temp_print();
+		#endif
 	}
 }
 
@@ -163,7 +166,7 @@ int main (void)
 		// if queue is full, no point in reading chars- host will just have to wait
 		if ((serial_rxchars() != 0) && (queue_full() == 0)) {
 			uint8_t c = serial_popchar();
-			scan_char(c);
+			gcode_parse_char(c);
 		}
 
 		ifclock(CLOCK_FLAG_250MS) {
