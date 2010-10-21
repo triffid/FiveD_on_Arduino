@@ -13,7 +13,7 @@
 #define	MASK(PIN) (1 << PIN)
 #define ACD	7
 #define OCIE1A	1
-#define SREG_I	7
+
 
 #undef X_STEP_PIN
 #undef X_DIR_PIN
@@ -58,9 +58,8 @@ typedef enum {
 #undef TEMP_PIN_CHANNEL
 #define TEMP_PIN_CHANNEL 0
 
-extern volatile uint8_t ACSR;
-extern volatile uint8_t SREG;
-extern volatile uint8_t TIMSK1;
+extern uint8_t ACSR;
+extern uint8_t TIMSK1;
 extern volatile bool sim_interrupts;
 
 void WRITE(pin_t pin, bool on);
@@ -68,7 +67,6 @@ void SET_OUTPUT(pin_t pin);
 void SET_INPUT(pin_t pin);
 
 void sei(void);
-void cli(void);
 
 #ifdef USE_WATCHDOG
 #define wd_init()
@@ -78,6 +76,9 @@ void cli(void);
 void sim_info(const char fmt[], ...);
 void sim_error(const char msg[]);
 void sim_assert(bool cond, const char msg[]);
+
+#define	ATOMIC_BLOCK(n)			if (n)
+#define	ATOMIC_RESTORESTATE	1
 
 #endif /* _SIMULATION_H */
 

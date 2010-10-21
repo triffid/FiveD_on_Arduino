@@ -6,7 +6,6 @@
 
 #include	"dda_queue.h"
 #include	"watchdog.h"
-#include	"debug.h"
 #include	"delay.h"
 #include	"serial.h"
 #include	"sermsg.h"
@@ -14,6 +13,7 @@
 #include	"heater.h"
 #include	"timer.h"
 #include	"sersendf.h"
+#include	"debug.h"
 
 /****************************************************************************
 *                                                                           *
@@ -256,14 +256,13 @@ void process_gcode_command() {
 				// M113- extruder PWM
 				// M114- report XYZEF to host
 			case 114:
-				sersendf_P("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%lu\n",
-					(long int)current_position.X,
-					(long int)current_position.Y,
-					(long int)current_position.Z,
-					(long int)current_position.E,
-					(long unsigned int)current_position.F);
+				sersendf_P(PSTR("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld\n"), current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
 				break;
-				
+				// M115- capabilities string
+			case 115:
+				serial_writestr_P(PSTR("FIRMWARE_NAME:FiveD_on_Arduino FIRMWARE_URL:http%3A//github.com/triffid/FiveD_on_Arduino/ PROTOCOL_VERSION:1.0 MACHINE_TYPE:Mendel EXTRUDER_COUNT:1 HEATER_COUNT:1\n"));
+				break;
+
 				#ifdef	HEATER_PIN
 				// M130- heater P factor
 			case 130:
