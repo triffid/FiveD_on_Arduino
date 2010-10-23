@@ -57,6 +57,10 @@
 	#include	"arduino_1280.h"
 #endif	/* __AVR_ATmega1280__) */
 
+#if defined (SIMULATION)
+	#include	"simulation/simulation.h"
+#endif
+
 #ifndef	DIO0_PIN
 #error pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please tell us via the forum thread
 #endif

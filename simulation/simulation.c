@@ -3,9 +3,33 @@
 #include <stdarg.h>
 
 #include "simulation.h"
+#include "../clock.h"
 
 uint8_t ACSR;
 uint8_t TIMSK1;
+
+char *sim_serial_port;
+
+/* -- initialise simulation ------------------------------------------------ */
+
+void sim_init(void) __attribute__((constructor));
+void sim_init(void)
+{
+	/* hack to get argv and argc */
+	extern char ** environ;
+	int argc = 1;
+	char **argv = environ - 3;
+
+	while((int)*argv != argc)
+	{
+		++argc;
+		--argv;
+	}
+	argv++;
+
+	sim_assert(argc >= 2, "please specify a serial port device name");
+	sim_serial_port = argv[1];
+}
 
 
 /* -- debugging ------------------------------------------------------------ */
@@ -13,16 +37,16 @@ uint8_t TIMSK1;
 void sim_info(const char fmt[], ...)
 {
 	va_list ap;
-	fputs("\033[0;32m" , stdout);
+	fputs("\033[0;32m" , stderr);
 	va_start(ap, fmt);
-	vprintf(fmt, ap);
+	vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	fputs("\033[m\n", stdout);
+	fputs("\033[m\n", stderr);
 }
 
 void sim_error(const char msg[])
 {
-	printf("\033[0;31mERROR: %s\033[m\n", msg);
+	fprintf(stderr, "\033[0;31mERROR: %s\033[m\n", msg);
 	exit(-1);
 }
 
@@ -44,7 +68,7 @@ void sei(void)
 }
 
 
-/* -- PIN I/O ------------------------------------------------------------ */
+/* -- PIN I/O -------------------------------------------------------------- */
 
 #define out true
 #define in  false
@@ -56,7 +80,7 @@ static bool state[PIN_NB];
 
 static void print_pos(void)
 {
-	sim_info("x:%5d       y:%5d       z:%5d       e:%5d", x, y, z, e);
+	printf("%6u %5d %5d %5d %5d\n", clock_read(), x, y, z, e);
 }
 
 void WRITE(pin_t pin, bool s)
@@ -95,7 +119,7 @@ void WRITE(pin_t pin, bool s)
 
 void SET_OUTPUT(pin_t pin)
 {
-	direction[pin] = out;	
+	direction[pin] = out;
 }
 
 void SET_INPUT(pin_t pin)

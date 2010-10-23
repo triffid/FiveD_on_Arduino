@@ -1,9 +1,7 @@
 #include	"sersendf.h"
 
 #include	<stdarg.h>
-#ifndef SIMULATION
-	#include <avr/pgmspace.h>
-#endif
+#include	<avr/pgmspace.h>
 
 #include	"serial.h"
 #include	"sermsg.h"

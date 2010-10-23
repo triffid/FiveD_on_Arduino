@@ -105,8 +105,9 @@ The PID code in heater.c is probably quite generalisable, and seems to work well
 #                                                                            #
 ##############################################################################
 
-To compile the simulation code, use
+The directory simulation/ contains helper code to run the FiveD firmware on any PC, simulation the low-level hardware. This can be useful for debugging. To compile the simulation code, use
 
+	$ cd simulation
 	$ make sim
 
 The simulation program will open a serial port for communication. If you don't want to connect a null modem cable, you can use 'socat' to connect a virtual serial port to your terminal:

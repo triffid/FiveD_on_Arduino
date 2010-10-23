@@ -18,9 +18,7 @@
 
 #include "temp.h"
 
-#ifndef SIMULATION
-	#include	<avr/eeprom.h>
-#endif
+#include	<avr/eeprom.h>
 
 #include	"clock.h"
 #include	"serial.h"
@@ -73,8 +71,6 @@ uint16_t temptable[NUMTEMPS][2] PROGMEM = {
 		#endif
 	#endif
 #endif
-
-#include "simulation.h"
 
 uint16_t	current_temp = 0;
 uint16_t	target_temp  = 0;

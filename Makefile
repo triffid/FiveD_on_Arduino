@@ -124,24 +124,3 @@ config.h: config.h.dist
 %.sym: %.elf
 	@echo "  SYM       $@"
 	@$(OBJDUMP) -t $< | perl -ne 'BEGIN { printf "  ADDR  NAME                  SIZE\n"; } /([0-9a-f]+)\s+(\w+)\s+O\s+\.(bss|data)\s+([0-9a-f]+)\s+(\w+)/ && printf "0x%04x  %-20s +%d\n", eval("0x$$1") & 0xFFFF, $$5, eval("0x$$4")' | sort -k1 > $@
-
-
-##############################################################################
-#                                                                            #
-# Simulation                                                                 #
-#                                                                            #
-##############################################################################
-
-SIM_SOURCES = $(PROGRAM).c serial_sim.c dda.c gcode_parse.c gcode_process.c timer_sim.c clock_sim.c temp.c sermsg.c dda_queue.c debug.c sersendf.c heater.c analog_sim.c delay_sim.c simulation.c
-SIM_HEADERS = config.h serial.h dda.h gcode_parse.h gcode_process.h timer.h clock.h temp.h sermsg.h dda_queue.h debug.h sersendf.h heater.h analog.h delay.h simulation.h
-
-SIM_OBJ = $(patsubst %.c,%.sim.o,${SIM_SOURCES})
-SIM_CFLAGS = -g -Wall -Wstrict-prototypes -Os $(DEFS) -std=gnu99 -funsigned-char -funsigned-bitfields -fshort-enums
-
-%.sim.o: %.c $(SIM_HEADERS)
-	@echo "  CC        $@"
-	@cc -DDEBUG -DSIMULATION -Wa,-adhlns=$(<:.c=.al) -c $(SIM_CFLAGS) -o $@ $<
-
-sim:	$(SIM_OBJ)
-	@echo "  LINK      $@"
-	@cc $(SIM_CFLAGS) -o $@ $^

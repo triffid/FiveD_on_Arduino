@@ -1,11 +1,10 @@
 #include <fcntl.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
-#include "serial.h"
+#include "../serial.h"
 #include "simulation.h"
 
 static int serial_fd;
@@ -15,22 +14,8 @@ void serial_init(void)
 {
 	struct termios options;
 
-	// hack to get argv and argc
-	extern char ** environ;
-	int argc = 1;
-        char **argv = environ - 3;
-
-        while((int)*argv != argc)
-        {
-                ++argc;
-                --argv;
-        }
-	argv++;
-
-	sim_assert(argc >= 2, "please specify a serial port device name");
-
-	sim_info("opening serial port %s", argv[1]);
-	serial_fd = open(argv[1], O_RDWR | O_NOCTTY | O_NDELAY);
+	sim_info("opening serial port %s", sim_serial_port);
+	serial_fd = open(sim_serial_port, O_RDWR | O_NOCTTY | O_NDELAY);
 	sim_assert(serial_fd != -1, "couldn't open serial port");
 	sim_assert(isatty(serial_fd), "not a TTY");
 
@@ -92,7 +77,6 @@ void serial_writechar(uint8_t data)
 {
 	ssize_t count;
 	sim_assert(serial_initialised, "serial interface not initialised");
-	putchar(data);
 	count = write(serial_fd, &data, 1);
 	sim_assert(count == 1, "could not write to serial port");
 }
@@ -103,7 +87,6 @@ void serial_writestr(uint8_t *data)
 	ssize_t count;
 	const char *str = (char *)data;
 	sim_assert(serial_initialised, "serial interface not initialised");
-	puts(str);
 	count = write(serial_fd, str, strlen(str));
 	sim_assert(count == strlen(str), "could not write to serial port");
 }

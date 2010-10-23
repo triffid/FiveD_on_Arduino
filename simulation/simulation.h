@@ -4,29 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define PROGMEM
-#define PGM_P const char *
-#define PSTR(x) (x)
-#define pgm_read_byte(x) (*((uint8_t *)(x)))
-#define pgm_read_word(x) (*((uint16_t *)(x)))
+/* make arduino.h happy */
+#define DIO0_PIN
 
-#define	MASK(PIN) (1 << PIN)
-#define ACD	7
-#define OCIE1A	1
-
-
-#undef X_STEP_PIN
-#undef X_DIR_PIN
-#undef X_MIN_PIN
-#undef Y_STEP_PIN
-#undef Y_DIR_PIN
-#undef Y_MIN_PIN
-#undef Z_STEP_PIN
-#undef Z_DIR_PIN
-#undef Z_MIN_PIN
-#undef E_STEP_PIN
-#undef E_DIR_PIN
-#undef STEPPER_ENABLE_PIN
 #undef HEATER_PIN
 #undef FAN_PIN
 #undef HEATER_PWM
@@ -58,15 +38,15 @@ typedef enum {
 #undef TEMP_PIN_CHANNEL
 #define TEMP_PIN_CHANNEL 0
 
-extern uint8_t ACSR;
-extern uint8_t TIMSK1;
 extern volatile bool sim_interrupts;
+extern char *sim_serial_port;
 
+#undef WRITE
+#undef SET_OUTPUT
+#undef SET_INPUT
 void WRITE(pin_t pin, bool on);
 void SET_OUTPUT(pin_t pin);
 void SET_INPUT(pin_t pin);
-
-void sei(void);
 
 #ifdef USE_WATCHDOG
 #define wd_init()
@@ -76,9 +56,6 @@ void sei(void);
 void sim_info(const char fmt[], ...);
 void sim_error(const char msg[]);
 void sim_assert(bool cond, const char msg[]);
-
-#define	ATOMIC_BLOCK(n)			if (n)
-#define	ATOMIC_RESTORESTATE	1
 
 #endif /* _SIMULATION_H */
 

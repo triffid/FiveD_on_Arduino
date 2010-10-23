@@ -2,12 +2,8 @@
 
 #include	<string.h>
 
-#ifdef SIMULATION
-	#include	"simulation.h"
-#else
-	#include	<avr/interrupt.h>
-	#include	<util/atomic.h>
-#endif
+#include	<avr/interrupt.h>
+#include	<util/atomic.h>
 
 #include	"config.h"
 #include	"timer.h"

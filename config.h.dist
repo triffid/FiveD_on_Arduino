@@ -132,10 +132,6 @@
 	- comment out pins not in use, as this drops the corresponding code and makes operations faster
 */
 
-#ifndef SIMULATION
-	#include	"arduino.h"
-#endif
-
 /*
 	RESERVED pins
 	we NEED these for communication
@@ -261,5 +257,7 @@
 	#define	power_on()					if (0) {}
 	#define	power_off()					if (0) {}
 #endif
+
+#include	"arduino.h"
 
 #endif	/* _CONFIG_H */

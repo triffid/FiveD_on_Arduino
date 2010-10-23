@@ -2,7 +2,7 @@
 #define	_HEATER_H
 
 #include	"config.h"
-#include	"simulation.h"
+#include	"simulation/simulation.h"
 
 #ifdef HEATER_PIN
 

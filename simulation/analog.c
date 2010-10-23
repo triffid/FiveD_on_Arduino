@@ -1,4 +1,4 @@
-#include "analog.h"
+#include "../analog.h"
 #include "simulation.h"
 
 static bool analog_initialised = false;

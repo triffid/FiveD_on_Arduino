@@ -1,10 +1,7 @@
 #include	"dda.h"
 
 #include	<string.h>
-
-#ifndef SIMULATION
-	#include	<avr/interrupt.h>
-#endif
+#include	<avr/interrupt.h>
 
 #include	"timer.h"
 #include	"serial.h"

@@ -1,7 +1,5 @@
-#ifndef SIMULATION
-	#include	<avr/io.h>
-	#include	<avr/interrupt.h>
-#endif
+#include	<avr/io.h>
+#include	<avr/interrupt.h>
 
 #include	"config.h"
 
@@ -18,7 +16,6 @@
 #include	"sersendf.h"
 #include	"heater.h"
 #include	"analog.h"
-#include	"simulation.h"
 
 void io_init(void) {
 	// disable modules we don't use

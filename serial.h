@@ -3,11 +3,8 @@
 
 #include	<stdint.h>
 
-#ifndef SIMULATION
-	#include	<avr/io.h>
-	#include	<avr/pgmspace.h>
-#endif
-#include	"simulation.h"
+#include	<avr/io.h>
+#include	<avr/pgmspace.h>
 
 // initialise serial subsystem
 void serial_init(void);
