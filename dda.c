@@ -22,7 +22,7 @@
 	#define _x_step(st)                    
 	#define x_direction(dir)                stored_x_direction=(dir)?0:-1
 	int8_t stored_x_direction;
-	uint8_t x_greycode;
+	int8_t x_greycode;
 #else
 	#define	_x_step(st)					WRITE(X_STEP_PIN, st)
 	#define	x_step()							_x_step(1);
@@ -48,7 +48,7 @@
 	#define _y_step(st)                     
 	#define y_direction(dir)                stored_y_direction=(dir)?0:-1
 	int8_t stored_y_direction;
-	uint8_t y_greycode;
+	int8_t y_greycode;
 #else
 	#define	_y_step(st)					WRITE(Y_STEP_PIN, st)
 	#define	y_step()							_y_step(1);
@@ -74,7 +74,7 @@
 	#define _z_step(st)                    
 	#define z_direction(dir)                stored_z_direction=(dir)?0:-1
 	int8_t stored_z_direction;
-	uint8_t z_greycode;
+	int8_t z_greycode;
 #else
 	#define	_z_step(st)					WRITE(Z_STEP_PIN, st)
 	#define	z_step()							_z_step(1);
@@ -100,7 +100,7 @@
 	#define _e_step(st)                     
 	#define e_direction(dir)                stored_e_direction=(dir)?0:-1
 	int8_t stored_e_direction;
-	uint8_t e_greycode;
+	int8_t e_greycode;
 #else
 	#define	_e_step(st)					WRITE(E_STEP_PIN, st)
 	#define	e_step()							_e_step(1);
