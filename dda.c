@@ -16,11 +16,13 @@
 #ifdef X_GREYCODE
 	#define x_step()                        {\
 												x_greycode+=stored_x_direction;\
-												WRITE(X_STEP_PIN,x_greycode&1);\
+												WRITE(X_STEP_PIN,(x_greycode>>1)&1);\
 												WRITE(X_DIR_PIN,((x_greycode>>1)^x_greycode)&1);\
 											}
 	#define _x_step(st)                    
 	#define x_direction(dir)                stored_x_direction=(dir)?0:-1
+	int8_t stored_x_direction;
+	uint8_t x_greycode;
 #else
 	#define	_x_step(st)					WRITE(X_STEP_PIN, st)
 	#define	x_step()							_x_step(1);
@@ -40,11 +42,13 @@
 #ifdef Y_GREYCODE
 	#define y_step()                        {\
 												y_greycode+=stored_y_direction;\
-												WRITE(Y_STEP_PIN,y_greycode&1);\
+												WRITE(Y_STEP_PIN,(y_greycode>>1)&1);\
 												WRITE(Y_DIR_PIN,((y_greycode>>1)^y_greycode)&1);\
 											}
 	#define _y_step(st)                     
 	#define y_direction(dir)                stored_y_direction=(dir)?0:-1
+	int8_t stored_y_direction;
+	uint8_t y_greycode;
 #else
 	#define	_y_step(st)					WRITE(Y_STEP_PIN, st)
 	#define	y_step()							_y_step(1);
@@ -64,11 +68,13 @@
 #ifdef Z_GREYCODE
 	#define z_step()                        {\
 												z_greycode+=stored_z_direction;\
-												WRITE(Z_STEP_PIN,z_greycode&1);\
+												WRITE(Z_STEP_PIN,(z_greycode>>1)&1);\
 												WRITE(Z_DIR_PIN,((z_greycode>>1)^z_greycode)&1);\
 											}
 	#define _z_step(st)                    
 	#define z_direction(dir)                stored_z_direction=(dir)?0:-1
+	int8_t stored_z_direction;
+	uint8_t z_greycode;
 #else
 	#define	_z_step(st)					WRITE(Z_STEP_PIN, st)
 	#define	z_step()							_z_step(1);
@@ -88,11 +94,13 @@
 #ifdef E_GREYCODE
 	#define e_step()                        {\
 												e_greycode+=stored_e_direction;\
-												WRITE(E_STEP_PIN,e_greycode&1);\
+												WRITE(E_STEP_PIN,(e_greycode>>1)&1);\
 												WRITE(E_DIR_PIN,((e_greycode>>1)^e_greycode)&1);\
 											}
 	#define _e_step(st)                     
 	#define e_direction(dir)                stored_e_direction=(dir)?0:-1
+	int8_t stored_e_direction;
+	uint8_t e_greycode;
 #else
 	#define	_e_step(st)					WRITE(E_STEP_PIN, st)
 	#define	e_step()							_e_step(1);
@@ -127,27 +135,6 @@
 */
 
 uint8_t	steptimeout = 0;
-
-/*
-	Greycode tracking variables
-*/
-
-#ifdef X_GREYCODE
-uint8_t stored_x_direction;
-uint8_t x_greycode;
-#endif
-#ifdef Y_GREYCODE
-uint8_t stored_y_direction;
-uint8_t y_greycode;
-#endif
-#ifdef Z_GREYCODE
-uint8_t stored_z_direction;
-uint8_t z_greycode;
-#endif
-#ifdef E_GREYCODE
-uint8_t stored_e_direction;
-uint8_t e_greycode;
-#endif
 
 /*
 	position tracking
