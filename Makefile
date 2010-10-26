@@ -22,7 +22,8 @@ SOURCES = $(PROGRAM).c serial.c dda.c gcode.c timer.c clock.c temp.c sermsg.c dd
 #                                                                            #
 ##############################################################################
 
-MCU_TARGET = atmega328p
+MCU_TARGET = -mmcu=atmega168
+#MCU_TARGET = -mcpu=cortex-m3 -mthumb -march=armv7 -mfix-cortex-m3-ldrd
 PMCU_TARGET = m168
 F_CPU = 16000000L
 
@@ -32,7 +33,10 @@ F_CPU = 16000000L
 #                                                                            #
 ##############################################################################
 
+# Arduino/sanguino standard ATMEL processors
 ARCH = avr-
+#CodeSorcery g++ Lite for the STM32VLDISCOVERY (ARM7/Cortex-M3/Thumb-2)
+#ARCH = arm-none-eabi-
 CC = $(ARCH)gcc
 OBJDUMP = $(ARCH)objdump
 OBJCOPY = $(ARCH)objcopy
@@ -57,7 +61,7 @@ DEFS = -DF_CPU=$(F_CPU)
 
 OPTIMIZE = -Os -ffunction-sections -finline-functions-called-once
 # OPTIMIZE = -O0
-CFLAGS = -g -Wall -Wstrict-prototypes $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -std=gnu99 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -save-temps
+CFLAGS = -g -Wall -Wstrict-prototypes $(OPTIMIZE) $(MCU_TARGET) $(DEFS) -std=gnu99 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -save-temps
 LDFLAGS = -Wl,--as-needed -Wl,--gc-sections
 
 AVRDUDE = avrdude
