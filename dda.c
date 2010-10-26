@@ -20,7 +20,7 @@
 												WRITE(X_DIR_PIN,((x_greycode>>1)^x_greycode)&1);\
 											}
 	#define _x_step(st)                    
-	#define x_direction(dir)                stored_x_direction=(dir)?0:-1
+	#define x_direction(dir)                stored_x_direction=(dir)?1:-1
 	int8_t stored_x_direction;
 	int8_t x_greycode;
 #else
@@ -46,7 +46,7 @@
 												WRITE(Y_DIR_PIN,((y_greycode>>1)^y_greycode)&1);\
 											}
 	#define _y_step(st)                     
-	#define y_direction(dir)                stored_y_direction=(dir)?0:-1
+	#define y_direction(dir)                stored_y_direction=(dir)?1:-1
 	int8_t stored_y_direction;
 	int8_t y_greycode;
 #else
@@ -72,7 +72,7 @@
 												WRITE(Z_DIR_PIN,((z_greycode>>1)^z_greycode)&1);\
 											}
 	#define _z_step(st)                    
-	#define z_direction(dir)                stored_z_direction=(dir)?0:-1
+	#define z_direction(dir)                stored_z_direction=(dir)?1:-1
 	int8_t stored_z_direction;
 	int8_t z_greycode;
 #else
@@ -98,7 +98,7 @@
 												WRITE(E_DIR_PIN,((e_greycode>>1)^e_greycode)&1);\
 											}
 	#define _e_step(st)                     
-	#define e_direction(dir)                stored_e_direction=(dir)?0:-1
+	#define e_direction(dir)                stored_e_direction=(dir)?1:-1
 	int8_t stored_e_direction;
 	int8_t e_greycode;
 #else
