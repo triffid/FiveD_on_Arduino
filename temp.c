@@ -143,16 +143,16 @@ uint16_t temp_read() {
 	for (i = 1; i < NUMTEMPS; i++) {
 		if (pgm_read_word(&(temptable[i][0])) > temp) {
 			// multiply by 4 because internal temp is stored as 14.2 fixed point
-			temp = pgm_read_word(&(temptable[i][1])) + (pgm_read_word(&(temptable[i][0])) - temp) * 4 * (pgm_read_word(&(temptable[i-1][1])) - pgm_read_word(&(temptable[i][1]))) / (pgm_read_word(&(temptable[i][0])) - pgm_read_word(&(temptable[i-1][0])));
+			current_temp = pgm_read_word(&(temptable[i][1])) * 4 + (pgm_read_word(&(temptable[i][0])) - temp) * 4 * (pgm_read_word(&(temptable[i-1][1])) - pgm_read_word(&(temptable[i][1]))) / (pgm_read_word(&(temptable[i][0])) - pgm_read_word(&(temptable[i-1][0])));
 			break;
 		}
 	}
 
 	//Clamp for overflows
 	if (i == NUMTEMPS)
-		temp = temptable[NUMTEMPS-1][1];
+		current_temp = temptable[NUMTEMPS-1][1] * 4;
 
-	return temp;
+	return current_temp;
 
 #endif	/* TEMP_THERMISTOR */
 
@@ -203,10 +203,10 @@ void temp_print() {
 }
 
 void temp_tick() {
+	temp_read();
+
 	if (target_temp) {
 		steptimeout = 0;
-
-		temp_read();
 
 		heater_tick(current_temp, target_temp);
 
