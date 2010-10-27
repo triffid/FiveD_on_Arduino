@@ -458,8 +458,14 @@ void dda_step(DDA *dda) {
 	// called from interrupt context! keep it as simple as possible
 	uint8_t	did_step = 0;
 
-	if ((current_position.X != dda->endpoint.X) /* &&
-	    (x_max() != dda->x_direction) && (x_min() == dda->x_direction) */) {
+	if ((current_position.X != dda->endpoint.X) 
+			#ifdef X_MAX_PIN
+			&& (x_max() != dda->x_direction) 
+			#endif
+			#ifdef X_MIN_PIN
+			&& (x_min() == dda->x_direction) 
+			#endif
+			) {
 		dda->x_counter -= dda->x_delta;
 		if (dda->x_counter < 0) {
 			x_step();
@@ -473,8 +479,14 @@ void dda_step(DDA *dda) {
 		}
 	}
 
-	if ((current_position.Y != dda->endpoint.Y) /* &&
-	    (y_max() != dda->y_direction) && (y_min() == dda->y_direction) */) {
+	if ((current_position.Y != dda->endpoint.Y) 
+			#ifdef Y_MAX_PIN
+			&& (y_max() != dda->y_direction) 
+			#endif
+			#ifdef Y_MIN_PIN
+			&& (y_min() == dda->y_direction) 
+			#endif
+			) {
 		dda->y_counter -= dda->y_delta;
 		if (dda->y_counter < 0) {
 			y_step();
@@ -488,8 +500,14 @@ void dda_step(DDA *dda) {
 		}
 	}
 
-	if ((current_position.Z != dda->endpoint.Z) /* &&
-	    (z_max() != dda->z_direction) && (z_min() == dda->z_direction) */) {
+	if ((current_position.Z != dda->endpoint.Z) 
+			#ifdef Z_MAX_PIN
+			&& (z_max() != dda->z_direction) 
+			#endif
+			#ifdef Z_MIN_PIN
+			&& (z_min() == dda->z_direction) 
+			#endif
+			) {
 		dda->z_counter -= dda->z_delta;
 		if (dda->z_counter < 0) {
 			z_step();
