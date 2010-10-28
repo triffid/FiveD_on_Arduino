@@ -298,14 +298,12 @@ void gcode_parse_char(uint8_t c) {
 				if (read_digit.exponent == 0)
 					read_digit.exponent = 1;
 				break;
-			#ifdef	DEBUG
 			case ' ':
 			case '\t':
 			case 10:
 			case 13:
 				// ignore
 				break;
-			#endif
 
 			default:
 				// can't do ranges in switch..case, so process actual digits here
@@ -315,14 +313,15 @@ void gcode_parse_char(uint8_t c) {
 					if (read_digit.exponent)
 						read_digit.exponent++;
 				}
-				#ifdef	DEBUG
 				else {
 					// invalid
+					next_target.invalid=1;
+					#ifdef	DEBUG
 					serial_writechar('?');
 					serial_writechar(c);
 					serial_writechar('?');
+					#endif
 				}
-				#endif
 		}
 	} else if ( next_target.seen_parens_comment == 1 && c == ')')
 		next_target.seen_parens_comment = 0; // recognize stuff after a (comment)
@@ -377,7 +376,7 @@ void gcode_parse_char(uint8_t c) {
 			next_target.seen_P = next_target.seen_N = next_target.seen_M = \
 			next_target.seen_checksum = next_target.seen_semi_comment = \
 			next_target.seen_parens_comment = next_target.checksum_read = \
-			next_target.checksum_calculated = 0;
+			next_target.checksum_calculated = next_target.invalid = 0;
 		last_field = 0;
 		read_digit.sign = read_digit.mantissa = read_digit.exponent = 0;
 

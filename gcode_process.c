@@ -23,7 +23,13 @@
 
 void process_gcode_command() {
 	uint32_t	backup_f;
-	
+
+	// Reject commands with invalid characters
+	if (next_target.invalid) {
+		serial_writestr_P(PSTR("Huh?\n"));
+		return;
+	}
+
 	// convert relative to absolute
 	if (next_target.option_relative) {
 		next_target.target.X += startpoint.X;
@@ -264,6 +270,7 @@ void process_gcode_command() {
 				break;
 
 				#ifdef	HEATER_PIN
+				#ifndef BANG_BANG
 				// M130- heater P factor
 			case 130:
 				if (next_target.seen_S)
@@ -288,6 +295,7 @@ void process_gcode_command() {
 			case 134:
 				heater_save_settings();
 				break;
+				#endif  /* BANG_BANG */
 				#endif	/* HEATER_PIN */
 				
 				// M190- power on
@@ -332,30 +340,12 @@ void process_gcode_command() {
 				
 				// DEBUG: return current position
 			case 250:
-				serial_writestr_P(PSTR("{X:"));
-				serwrite_int32(current_position.X);
-				serial_writestr_P(PSTR(",Y:"));
-				serwrite_int32(current_position.Y);
-				serial_writestr_P(PSTR(",Z:"));
-				serwrite_int32(current_position.Z);
-				serial_writestr_P(PSTR(",E:"));
-				serwrite_int32(current_position.E);
-				serial_writestr_P(PSTR(",F:"));
-				serwrite_int32(current_position.F);
+				serial_writechar('{');
+				sersendf_P(PSTR("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld"), current_position.X, current_position.Y, current_position.Z, current_position.E, current_position.F);
 				serial_writestr_P(PSTR(",c:"));
 				serwrite_uint32(movebuffer[mb_tail].c);
 				serial_writestr_P(PSTR("}\n"));
-				
-				serial_writestr_P(PSTR("{X:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.X);
-				serial_writestr_P(PSTR(",Y:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.Y);
-				serial_writestr_P(PSTR(",Z:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.Z);
-				serial_writestr_P(PSTR(",E:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.E);
-				serial_writestr_P(PSTR(",F:"));
-				serwrite_int32(movebuffer[mb_tail].endpoint.F);
+				sersendf_P(PSTR("X:%ld,Y:%ld,Z:%ld,E:%ld,F:%ld"), movebuffer[mb_tail].endpoint.X, movebuffer[mb_tail].endpoint.Y, movebuffer[mb_tail].endpoint.Z, movebuffer[mb_tail].endpoint.E, movebuffer[mb_tail].endpoint.F);
 				serial_writestr_P(PSTR(",c:"));
 				#ifdef ACCELERATION_REPRAP
 				serwrite_uint32(movebuffer[mb_tail].end_c);
@@ -363,10 +353,9 @@ void process_gcode_command() {
 				serwrite_uint32(movebuffer[mb_tail].c);
 				#endif
 				serial_writestr_P(PSTR("}\n"));
-				
+
 				print_queue();
 				break;
-				
 				// DEBUG: read arbitrary memory location
 			case 253:
 				if (next_target.seen_P == 0)
