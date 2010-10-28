@@ -28,11 +28,12 @@
 	#define	x_step()							_x_step(1);
 	#define	x_direction(dir)			WRITE(X_DIR_PIN, dir)
 #endif
-#define	x_min()								READ(X_MIN_PIN)
-#ifdef	X_MAX_PIN
+#if ENDSTOPS_OK_VALUE == 1
+	#define	x_min()							READ(X_MIN_PIN)
 	#define	x_max()							READ(X_MAX_PIN)
 #else
-	#define	x_max()							(0)
+	#define	x_min()							!READ(X_MIN_PIN)
+	#define	x_max()							!READ(X_MAX_PIN)
 #endif
 
 /*
@@ -54,11 +55,13 @@
 	#define	y_step()							_y_step(1);
 	#define	y_direction(dir)			WRITE(Y_DIR_PIN, dir)
 #endif
-#define	y_min()								READ(Y_MIN_PIN)
-#ifdef	Y_MAX_PIN
-	#define	y_max()							READ(Y_MAX_PIN)
+
+#if ENDSTOPS_OK_VALUE == 1
+	#define	y_min()								READ(Y_MIN_PIN)
+	#define	y_max()								READ(Y_MAX_PIN)
 #else
-	#define	y_max()							(0)
+	#define	y_min()								!READ(Y_MIN_PIN)
+	#define	y_max()								!READ(Y_MAX_PIN)
 #endif
 
 /*
@@ -80,11 +83,12 @@
 	#define	z_step()							_z_step(1);
 	#define	z_direction(dir)			WRITE(Z_DIR_PIN, dir)
 #endif
-#define	z_min()								READ(Z_MIN_PIN)
-#ifdef	Z_MAX_PIN
-	#define	z_max()							READ(Z_MAX_PIN)
+#if ENDSTOPS_OK_VALUE == 1
+	#define	z_min()								READ(Z_MIN_PIN)
+	#define	z_max()								READ(Z_MAX_PIN)
 #else
-	#define	z_max()							(0)
+	#define	z_min()								!READ(Z_MIN_PIN)
+	#define	z_max()								!READ(Z_MAX_PIN)
 #endif
 
 /*
@@ -460,10 +464,10 @@ void dda_step(DDA *dda) {
 
 	if ((current_position.X != dda->endpoint.X) 
 			#ifdef X_MAX_PIN
-			&& (x_max() != dda->x_direction) 
+			&& ( !dda->x_direction || x_max() ) 
 			#endif
 			#ifdef X_MIN_PIN
-			&& (x_min() == dda->x_direction) 
+			&& ( dda->x_direction || x_min() ) 
 			#endif
 			) {
 		dda->x_counter -= dda->x_delta;
@@ -481,10 +485,10 @@ void dda_step(DDA *dda) {
 
 	if ((current_position.Y != dda->endpoint.Y) 
 			#ifdef Y_MAX_PIN
-			&& (y_max() != dda->y_direction) 
+			&& ( !dda->y_direction || y_max() ) 
 			#endif
 			#ifdef Y_MIN_PIN
-			&& (y_min() == dda->y_direction) 
+			&& ( dda->y_direction || y_min() ) 
 			#endif
 			) {
 		dda->y_counter -= dda->y_delta;
@@ -502,10 +506,10 @@ void dda_step(DDA *dda) {
 
 	if ((current_position.Z != dda->endpoint.Z) 
 			#ifdef Z_MAX_PIN
-			&& (z_max() != dda->z_direction) 
+			&& ( !dda->z_direction || z_max() ) 
 			#endif
 			#ifdef Z_MIN_PIN
-			&& (z_min() == dda->z_direction) 
+			&& ( dda->z_direction || z_min() ) 
 			#endif
 			) {
 		dda->z_counter -= dda->z_delta;
