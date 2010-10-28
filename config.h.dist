@@ -250,7 +250,10 @@
 	Stepper Enable (ATX PSU pwr_good signal?)
 */
 
-#ifdef	STEPPER_ENABLE_PIN
+#if	defined(X_ENABLE_PIN)
+	#define power_on() do { WRITE(X_ENABLE_PIN, 0); WRITE(Y_ENABLE_PIN, 0); WRITE(Z_ENABLE_PIN, 0); WRITE(E_ENABLE_PIN, 0); } while (0)
+	#define power_off() do { WRITE(X_ENABLE_PIN, 1); WRITE(Y_ENABLE_PIN, 1); WRITE(Z_ENABLE_PIN, 1); WRITE(E_ENABLE_PIN, 1); } while (0)
+#elif	defined(STEPPER_ENABLE_PIN)
 	// for connection to stepper driver ENABLE pins (negative asserted)
 // 	#define	power_on()		WRITE(STEPPER_ENABLE_PIN, 0)
 // 	#define	power_off()	WRITE(STEPPER_ENABLE_PIN, 1)
