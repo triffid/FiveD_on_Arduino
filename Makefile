@@ -23,9 +23,9 @@ SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c clock.c time
 ##############################################################################
 
 #MCU_TARGET = atmega168
-MCU_TARGET = atmega328p
+#MCU_TARGET = atmega328p
 #MCU_TARGET = atmega644p
-#MCU_TARGET = atmega1280
+MCU_TARGET = atmega1280
 F_CPU = 16000000L
 
 ##############################################################################
@@ -55,7 +55,7 @@ OBJCOPY = $(ARCH)objcopy
 ##############################################################################
 
 DEFS = -DF_CPU=$(F_CPU)
-# DEFS += "-DDEBUG=1"
+DEFS += "-DDEBUG=1"
 
 OPTIMIZE = -Os -ffunction-sections -finline-functions-called-once
 # OPTIMIZE = -O0
