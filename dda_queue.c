@@ -90,15 +90,19 @@ void enqueue(TARGET *t) {
 
 // sometimes called from normal program execution, sometimes from interrupt context
 void next_move() {
-	if (queue_empty() == 0) {
+	if (queue_empty()) 
+		disableTimerInterrupt();
+	else {
 		// next item
 		uint8_t t = mb_tail + 1;
 		t &= (MOVEBUFFER_SIZE - 1);
 		dda_start(&movebuffer[t]);
 		mb_tail = t;
+		// Tail recursion: dda_start calls dda_step. If the dda has no steps, it will die here.
+		// Make sure there's a new dda done right now.
+		if(!movebuffer[t].live)
+			next_move();
 	}
-	else
-		disableTimerInterrupt();
 }
 
 void print_queue() {

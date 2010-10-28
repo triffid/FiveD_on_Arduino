@@ -461,6 +461,8 @@ void dda_start(DDA *dda) {
 
 		// set timeout for first step
 		setTimer(dda->c >> 8);
+		// Do the first increment NOW. (emulates this tick being the first call to timer interrupt)
+		dda_step(dda);
 		enableTimerInterrupt();
 	}
 }
