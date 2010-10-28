@@ -1,7 +1,13 @@
 #include	"dda_queue.h"
 
 #include	<string.h>
-#include	<avr/interrupt.h>
+
+#ifdef SIMULATION
+	#include	"simulation.h"
+#else
+	#include	<avr/interrupt.h>
+	#include	<util/atomic.h>
+#endif
 
 #include	"config.h"
 #include	"timer.h"
@@ -105,4 +111,12 @@ void print_queue() {
 	if (queue_empty())
 		serial_writechar('E');
 	serial_writechar('\n');
+}
+
+void queue_flush() {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		// flush queue
+		mb_tail = mb_head;
+		movebuffer[mb_head].live = 0;
+	}
 }

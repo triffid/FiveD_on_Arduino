@@ -2,8 +2,10 @@ Rewrite of Reprap Mendel firmware:
 
 * 100% integer computations
 * serial transmit buffer
-* can fit onto atmega168
-* fits onto atmega328p etc
+* can fit onto atmega168 depending on selected options
+* works on atmega328p
+* works on atmega644p
+* porting to atmega1280 in progress
 * will work on larger atmegas with minor porting
 
 ##############################################################################
@@ -19,6 +21,28 @@ Rewrite of Reprap Mendel firmware:
 5) ./sender.sh
 6) have a play, go to 1) if not right
 7) try printing something!
+
+##############################################################################
+#                                                                            #
+# License                                                                    #
+#                                                                            #
+##############################################################################
+
+This firmware is Copyright (C) 2009-2010 Michael Moon aka Triffid_Hunter
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 ##############################################################################
 #                                                                            #
@@ -77,6 +101,30 @@ The PID code in heater.c is probably quite generalisable, and seems to work well
 
 ##############################################################################
 #                                                                            #
+# Simulation                                                                 #
+#                                                                            #
+##############################################################################
+
+To compile the simulation code, use
+
+	$ make sim
+
+The simulation program will open a serial port for communication. If you don't want to connect a null modem cable, you can use 'socat' to connect a virtual serial port to your terminal:
+
+	$ socat -d -d PTY READLINE
+	2010/10/18 20:24:33 socat[3700] N PTY is /dev/pts/2
+	2010/10/18 20:24:33 socat[3700] N using readline on stdin for reading and stdio for writing
+	2010/10/18 20:24:33 socat[3700] N starting data transfer loop with FDs [3,3] and [0,0]
+
+On the first line of output, socat will tell you the name of the virtual serial port. Pass this as an argument to the simulation program (in another terminal):
+
+	$ ./sim /dev/pts/2
+
+Now you can send G-codes from the socat terminal. The simulation code will print any data sent via the firmware's serial interface. Stepper positions will be shown in green, counting a rising slope on the pin as one step.
+
+
+##############################################################################
+#                                                                            #
 # File descriptions                                                          #
 #                                                                            #
 ##############################################################################
@@ -128,6 +176,9 @@ This file associates various functions with particular pins on your avr
 
 *** README
 this file
+
+*** simulation.[sh]
+helper code to run the code on any Unix PC
 
 *** sender.sh
 A simple talker

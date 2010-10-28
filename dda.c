@@ -1,7 +1,10 @@
 #include	"dda.h"
 
 #include	<string.h>
-#include	<avr/interrupt.h>
+
+#ifndef SIMULATION
+	#include	<avr/interrupt.h>
+#endif
 
 #include	"timer.h"
 #include	"serial.h"
@@ -121,10 +124,10 @@
 /*
 	Used in distance calculation during DDA setup
 */
-#define	UM_PER_STEP_X		((uint32_t) ((1000.0 / STEPS_PER_MM_X) + 0.5))
-#define	UM_PER_STEP_Y		((uint32_t) ((1000.0 / STEPS_PER_MM_Y) + 0.5))
-#define	UM_PER_STEP_Z		((uint32_t) ((1000.0 / STEPS_PER_MM_Z) + 0.5))
-#define	UM_PER_STEP_E		((uint32_t) ((1000.0 / STEPS_PER_MM_E) + 0.5))
+#define	UM_PER_STEP_X		1000L / ((uint32_t) STEPS_PER_MM_X)
+#define	UM_PER_STEP_Y		1000L / ((uint32_t) STEPS_PER_MM_Y)
+#define	UM_PER_STEP_Z		1000L / ((uint32_t) STEPS_PER_MM_Z)
+#define	UM_PER_STEP_E		1000L / ((uint32_t) STEPS_PER_MM_E)
 
 /*
 	Maths
@@ -322,16 +325,16 @@ void dda_create(DDA *dda, TARGET *target) {
 		// similarly, find out how fast we can run our axes.
 		// do this for each axis individually, as the combined speed of two or more axes can be higher than the capabilities of a single one.
 		c_limit = 0;
-		c_limit_calc = ((dda->x_delta * UM_PER_STEP_X * 2400) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_X) << 8;
+		c_limit_calc = ( (dda->x_delta * (UM_PER_STEP_X * 2400L)) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_X) << 8;
 		if (c_limit_calc > c_limit)
 			c_limit = c_limit_calc;
-		c_limit_calc = ((dda->y_delta * UM_PER_STEP_Y * 2400) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_Y) << 8;
+		c_limit_calc = ( (dda->y_delta * (UM_PER_STEP_Y * 2400L)) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_Y) << 8;
 		if (c_limit_calc > c_limit)
 			c_limit = c_limit_calc;
-		c_limit_calc = ((dda->z_delta * UM_PER_STEP_Z * 2400) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_Z) << 8;
+		c_limit_calc = ( (dda->z_delta * (UM_PER_STEP_Z * 2400L)) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_Z) << 8;
 		if (c_limit_calc > c_limit)
 			c_limit = c_limit_calc;
-		c_limit_calc = ((dda->e_delta * UM_PER_STEP_E * 2400) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_E) << 8;
+		c_limit_calc = ( (dda->e_delta * (UM_PER_STEP_E * 2400L)) / dda->total_steps * (F_CPU / 40000) / MAXIMUM_FEEDRATE_E) << 8;
 		if (c_limit_calc > c_limit)
 			c_limit = c_limit_calc;
 
@@ -384,7 +387,15 @@ void dda_create(DDA *dda, TARGET *target) {
 			}
 
 			if (debug_flags & DEBUG_DDA) {
-				sersendf_P(PSTR("\n{DDA:CA end_c:%lu, n:%ld, md:%lu, ssq:%lu, esq:%lu, dsq:%lu, msbssq:%u, msbtot:%u}\n"), dda->end_c >> 8, dda->n, move_duration, ssq, esq, dsq, msb_ssq, msb_tot);
+				sersendf_P(PSTR("\n{DDA:CA end_c:%lu, n:%ld, md:%lu, ssq:%lu, esq:%lu, dsq:%lu, msbssq:%u, msbtot:%u}\n"),
+					(long unsigned int)dda->end_c >> 8,
+					(long int)dda->n,
+					(long unsigned int)move_duration,
+					(long unsigned int)ssq,
+					(long unsigned int)esq,
+					(long unsigned int)dsq,
+					msb_ssq,
+					msb_tot);
 			}
 
 			dda->accel = 1;
