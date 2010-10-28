@@ -55,6 +55,7 @@ typedef struct {
 
 	uint8_t						checksum_read;
 	uint8_t						checksum_calculated;
+	uint8_t					invalid;
 } GCODE_COMMAND;
 
 // the command being processed
