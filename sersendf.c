@@ -5,7 +5,7 @@
 
 #include	"serial.h"
 #include	"sermsg.h"
-
+/*
 PGM_P	str_ox = "0x";
 
 void sersendf(char *format, ...) {
@@ -66,6 +66,7 @@ void sersendf(char *format, ...) {
 	}
 	va_end(args);
 }
+*/
 
 void sersendf_P(PGM_P format, ...) {
 	va_list args;
@@ -109,10 +110,12 @@ void sersendf_P(PGM_P format, ...) {
 				case 'c':
 					serial_writechar(va_arg(args, uint16_t));
 				case 'p':
-					serwrite_hex16(va_arg(args, uint16_t));
+					serwrite_hex16(va_arg(args, uint16_t));*/
 				default:
+					/* Error in format, but only give a brief (1 char) warning */
+					serial_writechar('~');
 					j = 0;
-					break;*/
+					break;
 			}
 		}
 		else {
