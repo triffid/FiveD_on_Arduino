@@ -641,6 +641,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			 	break;
 
 			#ifdef	HEATER_PIN
+			#ifndef BANG_BANG
 			// M130- heater P factor
 			case 130:
 				if (gcmd->seen_S)
@@ -665,6 +666,7 @@ void process_gcode_command(GCODE_COMMAND *gcmd) {
 			case 134:
 				heater_save_settings();
 				break;
+			#endif /* BANG_BANG */
 			#endif	/* HEATER_PIN */
 
 			// M190- power on
