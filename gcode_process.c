@@ -26,7 +26,7 @@ void process_gcode_command() {
 
 	// Reject commands with invalid characters
 	if (next_target.invalid) {
-		serial_writestr_P(PSTR("Huh?\n"));
+		serial_writestr_P(PSTR("\nHuh?"));
 		return;
 	}
 
