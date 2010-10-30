@@ -1,6 +1,7 @@
 #include	"heater.h"
 
 #ifdef HEATER_PIN
+#ifndef BANG_BANG
 
 #ifndef SIMULATION
 	#include	<avr/eeprom.h>
@@ -105,5 +106,12 @@ void heater_tick(int16_t current_temp, int16_t target_temp) {
 		disable_heater();
 	#endif
 }
-
+#else /* BANG_BANG */
+void heater_tick(int16_t current_temp, int16_t target_temp) {
+	if ( current_temp < target_temp )
+		enable_heater();
+	else
+		disable_heater();
+}
+#endif /* BANG_BANG */
 #endif	/* HEATER_PIN */

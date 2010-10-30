@@ -264,6 +264,7 @@ void process_gcode_command() {
 				break;
 
 				#ifdef	HEATER_PIN
+				#ifndef BANG_BANG
 				// M130- heater P factor
 			case 130:
 				if (next_target.seen_S)
@@ -288,6 +289,7 @@ void process_gcode_command() {
 			case 134:
 				heater_save_settings();
 				break;
+				#endif  /* BANG_BANG */
 				#endif	/* HEATER_PIN */
 				
 				// M190- power on

@@ -226,6 +226,14 @@
 #define	FAN_PIN								DIO5
 #define	FAN_PWM								OCR0B
 
+/*
+	Define this to disable PID and use bang-bang instead.
+	If you do this, you must also comment out "HEATER_PWM" above.
+	Otherwise it won't work correctly. Using bang-bang takes MUCH less
+	space.
+*/
+//#define BANG_BANG
+
 // --------------------------------------------------------------------------
 // you shouldn't need to edit anything below this line
 
