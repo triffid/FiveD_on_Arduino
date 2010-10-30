@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <math.h>
 
+#include "../config.h"
 #include "simulation.h"
 #include "../clock.h"
 
@@ -80,7 +82,28 @@ static bool state[PIN_NB];
 
 static void print_pos(void)
 {
-	printf("%6u %5d %5d %5d %5d\n", clock_read(), x, y, z, e);
+	static int x_old = 0, y_old = 0, z_old = 0;
+	float dx, dy, dz, d;
+	static uint32_t clk_old;
+
+	uint32_t clk = clock_read();
+	if (clk - clk_old < 50) return; /* output every 50ms */
+
+	/* calculate speeds in mm/minute */
+	dx = 60000.0 * (x - x_old) / (clk - clk_old) / STEPS_PER_MM_X;
+	dy = 60000.0 * (y - y_old) / (clk - clk_old) / STEPS_PER_MM_Y;
+	dz = 60000.0 * (z - z_old) / (clk - clk_old) / STEPS_PER_MM_Z;
+	d = sqrt(dx*dx + dy*dy + dz*dz);
+
+	printf("%.3f  %.3f %.3f %.3f  %.4f %.4f %.4f  %.4f\n",
+		clk / 1000.0,
+		x / STEPS_PER_MM_X,
+		y / STEPS_PER_MM_Y,
+		z / STEPS_PER_MM_Z,
+		dx, dy, dz, d);
+
+	clk_old = clk;
+	x_old = x; y_old = y; z_old = z;
 }
 
 void WRITE(pin_t pin, bool s)

@@ -1,0 +1,33 @@
+##############################################################################
+#                                                                            #
+# Simulation                                                                 #
+#                                                                            #
+##############################################################################
+
+This directory contains helper code to run the FiveD firmware on any PC, simulating the low-level hardware. This can be useful for debugging. To compile the simulation code, use
+
+	$ make sim
+
+The simulation program will open a serial port for communication. If you don't want to connect a null modem cable, you can use 'socat' to connect a virtual serial port to your terminal:
+
+	$ socat -d -d PTY READLINE
+	2010/10/18 20:24:33 socat[3700] N PTY is /dev/pts/2
+	2010/10/18 20:24:33 socat[3700] N using readline on stdin for reading and stdio for writing
+	2010/10/18 20:24:33 socat[3700] N starting data transfer loop with FDs [3,3] and [0,0]
+
+On the first line of output, socat will tell you the name of the virtual serial port. Pass this as an argument to the simulation program (in another terminal):
+
+	$ ./sim /dev/pts/2
+
+Now you can send G-codes from the socat terminal. The simulation code will print the time in seconds and x, y, z stepper positions, counting a rising slope on the pin as one step.
+
+The shell script plot.sh can be used to plot positions and speeds. Simply direct the output (stdout) of the simulation program to file 
+
+	$ ./sim /dev/pts/2 > example.txt
+
+Then, call plot.sh with the file as argument:
+
+	$ ./plot.sh example.txt
+
+plot.sh will, using gnuplot, generate two files, example-xy.png and example-speed.png, showing position in the z-plane and speeds, respectively.
+

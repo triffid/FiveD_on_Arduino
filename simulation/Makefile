@@ -16,7 +16,7 @@ SOURCES += simulation.c
 OBJ = $(patsubst %.c,%.o,${SOURCES})
 CFLAGS = -g -Wall -Wstrict-prototypes -Os $(DEFS) -std=gnu99 -funsigned-char -funsigned-bitfields -fshort-enums -I.
 LDFLAGS = 
-LIBS = -lrt
+LIBS = -lrt -lm
 
 sim: $(OBJ)
 	@echo "  LINK      $@"

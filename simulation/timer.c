@@ -55,7 +55,7 @@ void setupTimerInterrupt(void)
 void setTimer(uint32_t delay)
 {
 	struct itimerspec its;
-	long long nsec = (long)delay * 8000000 / F_CPU * 1000;
+	long long nsec = (long)delay * (1000000000 / F_CPU);
 
 	its.it_value.tv_sec = nsec / 1000000000;
 	its.it_value.tv_nsec = nsec % 1000000000;
