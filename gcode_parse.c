@@ -25,10 +25,10 @@
 	which is about the worst case we have. All other machines have a bigger build volume.
 */
 
-#define	STEPS_PER_M_X			((uint32_t) (STEPS_PER_MM_X * 1000.0))
-#define	STEPS_PER_M_Y			((uint32_t) (STEPS_PER_MM_Y * 1000.0))
-#define	STEPS_PER_M_Z			((uint32_t) (STEPS_PER_MM_Z * 1000.0))
-#define	STEPS_PER_M_E			((uint32_t) (STEPS_PER_MM_E * 1000.0))
+#define	STEPS_PER_M_X			((uint32_t) ((STEPS_PER_MM_X * 1000.0) + 0.5))
+#define	STEPS_PER_M_Y			((uint32_t) ((STEPS_PER_MM_Y * 1000.0) + 0.5))
+#define	STEPS_PER_M_Z			((uint32_t) ((STEPS_PER_MM_Z * 1000.0) + 0.5))
+#define	STEPS_PER_M_E			((uint32_t) ((STEPS_PER_MM_E * 1000.0) + 0.5))
 
 /*
 	mm -> inch conversion
@@ -51,44 +51,59 @@ GCODE_COMMAND next_target		__attribute__ ((__section__ (".bss")));
 	utility functions
 */
 
-int32_t	decfloat_to_int(decfloat *df, int32_t multiplicand, int32_t denominator) {
-	int32_t	r = df->mantissa;
+static int32_t decfloat_to_int(decfloat *df, uint32_t multiplicand, uint8_t exponent) {
+	uint32_t	r = df->mantissa;
 	uint8_t	e = df->exponent;
 
 	// e=1 means we've seen a decimal point but no digits after it, and e=2 means we've seen a decimal point with one digit so it's too high by one if not zero
 	if (e)
 		e--;
 
-	// scale factors
-// 	if (multiplicand != 1)
-// 		r *= multiplicand;
-// 	if (denominator != 1)
-// 		r /= denominator;
+	e += exponent;
 
-	int32_t	rnew1 = r * (multiplicand / denominator);
-	int32_t	rnew2 = r * (multiplicand % denominator);
-	r = rnew1 + rnew2;
+	// check if (r * multiplicand) would overflow.
+	// if yes, divide the bigger of the factors by 10.
+	while (    ((r >> 16) != 0 && (multiplicand >> 16) != 0)
+	        || ((r >> 16) * (multiplicand & 0xFFFF) + (r & 0xFFFF) * (multiplicand >> 16) > 0xFFFF) )
+	{
+		if (e-- > 0)
+		{
+			if (r > multiplicand)
+			{
+				// fix rounding for last division.
+				// addition won't overflow because df->mantissa is less than 32 bits.
+				if (e == 0)
+					r += 5;
 
-	// sign
-	if (df->sign)
-		r = -r;
+				r /= 10;
+			}
+			else
+			{
+				// fix rounding for last division unless addition would overflow
+				if (e == 0 && (multiplicand + 5) > multiplicand)
+					multiplicand += 5;
 
-	// exponent- try to keep divides to a minimum for common (small) values at expense of slightly more code
-	while (e >= 5) {
-		r /= 100000;
-		e -= 5;
+				multiplicand /= 10;
+			}
+		}
+		else
+		{
+			// error: too big, return highest possible value
+			return df->sign ? -INT32_MAX : INT32_MAX;
+		}
 	}
 
-	if (e == 1)
-		r /= 10;
-	else if (e == 2)
-		r /= 100;
-	else if (e == 3)
-		r /= 1000;
-	else if (e == 4)
-		r /= 10000;
+	r	*= multiplicand;
 
-	return r;
+	while (e-- > 0)
+	{
+		if (e == 0)	// fix rounding for last division
+			r += 5;
+
+		r /= 10;
+	}
+
+	return df->sign ? -r : r;
 }
 
 /****************************************************************************
@@ -125,42 +140,42 @@ void gcode_parse_char(uint8_t c) {
 					break;
 				case 'X':
 					if (next_target.option_inches)
-						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_IN_X, 1);
+						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_IN_X, 0);
 					else
-						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_M_X, 1000);
+						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_M_X, 3);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.X);
 					break;
 				case 'Y':
 					if (next_target.option_inches)
-						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_IN_Y, 1);
+						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_IN_Y, 0);
 					else
-						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_M_Y, 1000);
+						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_M_Y, 3);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.Y);
 					break;
 				case 'Z':
 					if (next_target.option_inches)
-						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_IN_Z, 1);
+						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_IN_Z, 0);
 					else
-						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 1000);
+						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 3);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.Z);
 					break;
 				case 'E':
 					if (next_target.option_inches)
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 1);
+						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 0);
 					else
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 1000);
+						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 3);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint32(next_target.target.E);
 					break;
 				case 'F':
 					// just use raw integer, we need move distance and n_steps to convert it to a useful value, so wait until we have those to convert it
 					if (next_target.option_inches)
-						next_target.target.F = decfloat_to_int(&read_digit, 254, 10);
+						next_target.target.F = decfloat_to_int(&read_digit, 254, 1);
 					else
-						next_target.target.F = decfloat_to_int(&read_digit, 1, 1);
+						next_target.target.F = decfloat_to_int(&read_digit, 1, 0);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint32(next_target.target.F);
 					break;
@@ -169,21 +184,21 @@ void gcode_parse_char(uint8_t c) {
 					// cosmetically this should be done in the temperature section,
 					// but it takes less code, less memory and loses no precision if we do it here instead
 					if ((next_target.M == 104) || (next_target.M == 109))
-						next_target.S = decfloat_to_int(&read_digit, 4, 1);
+						next_target.S = decfloat_to_int(&read_digit, 4, 0);
 					// if this is heater PID stuff, multiply by PID_SCALE because we divide by PID_SCALE later on
 					else if ((next_target.M >= 130) && (next_target.M <= 132))
-						next_target.S = decfloat_to_int(&read_digit, PID_SCALE, 1);
+						next_target.S = decfloat_to_int(&read_digit, PID_SCALE, 0);
 					else
-						next_target.S = decfloat_to_int(&read_digit, 1, 1);
+						next_target.S = decfloat_to_int(&read_digit, 1, 0);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint16(next_target.S);
 					break;
 				case 'P':
 					// if this is dwell, multiply by 1000 to convert seconds to milliseconds
 					if (next_target.G == 4)
-						next_target.P = decfloat_to_int(&read_digit, 1000, 1);
+						next_target.P = decfloat_to_int(&read_digit, 1000, 0);
 					else
-						next_target.P = decfloat_to_int(&read_digit, 1, 1);
+						next_target.P = decfloat_to_int(&read_digit, 1, 0);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint16(next_target.P);
 					break;
@@ -193,12 +208,12 @@ void gcode_parse_char(uint8_t c) {
 						serwrite_uint8(next_target.T);
 					break;
 				case 'N':
-					next_target.N = decfloat_to_int(&read_digit, 1, 1);
+					next_target.N = decfloat_to_int(&read_digit, 1, 0);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint32(next_target.N);
 					break;
 				case '*':
-					next_target.checksum_read = decfloat_to_int(&read_digit, 1, 1);
+					next_target.checksum_read = decfloat_to_int(&read_digit, 1, 0);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint8(next_target.checksum_read);
 					break;
@@ -292,10 +307,11 @@ void gcode_parse_char(uint8_t c) {
 			#endif
 
 			default:
-				// can't do ranges in switch..case, so process actual digits here. Limit the digits right of the decimal to avoid variable overflow in decfloat_to_int() due to excess precision
-				if (c >= '0' && c <= '9' &&
-				    ((next_target.option_inches == 0 && read_digit.exponent < 4) ||
-				     (next_target.option_inches && read_digit.exponent < 5))) {
+				// can't do ranges in switch..case, so process actual digits here.
+				if (    c >= '0'
+				     && c <= '9'
+				     && read_digit.mantissa < (DECFLOAT_MANT_MAX / 10)
+				     && read_digit.exponent < DECFLOAT_EXP_MAX ) {
 					// this is simply mantissa = (mantissa * 10) + atoi(c) in different clothes
 					read_digit.mantissa = (read_digit.mantissa << 3) + (read_digit.mantissa << 1) + (c - '0');
 					if (read_digit.exponent)
