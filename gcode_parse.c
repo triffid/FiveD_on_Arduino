@@ -50,57 +50,29 @@ GCODE_COMMAND next_target		__attribute__ ((__section__ (".bss")));
 /*
 	utility functions
 */
+extern const uint32_t powers[];  // defined in sermsg.c
+const int32_t rounding[DECFLOAT_EXP_MAX] = {0,  5,  50,  500,  5000,  50000,  500000};
 
-static int32_t decfloat_to_int(decfloat *df, uint32_t multiplicand, uint8_t exponent) {
-	uint32_t	r = df->mantissa;
+static int32_t decfloat_to_int(decfloat *df, int32_t multiplicand, uint32_t denominator) {
+	int32_t	r = df->mantissa;
 	uint8_t	e = df->exponent;
 
 	// e=1 means we've seen a decimal point but no digits after it, and e=2 means we've seen a decimal point with one digit so it's too high by one if not zero
 	if (e)
 		e--;
 
-	e += exponent;
-
-	// check if (r * multiplicand) would overflow.
-	// if yes, divide the bigger of the factors by 10.
-	while (    ((r >> 16) != 0 && (multiplicand >> 16) != 0)
-	        || ((r >> 16) * (multiplicand & 0xFFFF) + (r & 0xFFFF) * (multiplicand >> 16) > 0xFFFF) )
+	int32_t	rnew1 = r * (multiplicand / denominator);
+	if (e)
 	{
-		if (e-- > 0)
-		{
-			if (r > multiplicand)
-			{
-				// fix rounding for last division.
-				// addition won't overflow because df->mantissa is less than 32 bits.
-				if (e == 0)
-					r += 5;
+		int32_t	rnew2 = r * (multiplicand % denominator) / denominator;
+		r = rnew1 + rnew2;
 
-				r /= 10;
-			}
-			else
-			{
-				// fix rounding for last division unless addition would overflow
-				if (e == 0 && (multiplicand + 5) > multiplicand)
-					multiplicand += 5;
-
-				multiplicand /= 10;
-			}
-		}
-		else
-		{
-			// error: too big, return highest possible value
-			return df->sign ? -INT32_MAX : INT32_MAX;
-		}
+		r = (r + rounding[e]) / powers[e];
 	}
-
-	r	*= multiplicand;
-
-	while (e-- > 0)
+	else
 	{
-		if (e == 0)	// fix rounding for last division
-			r += 5;
-
-		r /= 10;
+		int32_t	rnew2 = (r * (multiplicand % denominator) + (denominator / 2)) / denominator;
+		r = rnew1 + rnew2;
 	}
 
 	return df->sign ? -r : r;
@@ -140,42 +112,42 @@ void gcode_parse_char(uint8_t c) {
 					break;
 				case 'X':
 					if (next_target.option_inches)
-						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_IN_X, 0);
+						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_IN_X, 1);
 					else
-						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_M_X, 3);
+						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_M_X, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.X);
 					break;
 				case 'Y':
 					if (next_target.option_inches)
-						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_IN_Y, 0);
+						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_IN_Y, 1);
 					else
-						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_M_Y, 3);
+						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_M_Y, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.Y);
 					break;
 				case 'Z':
 					if (next_target.option_inches)
-						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_IN_Z, 0);
+						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_IN_Z, 1);
 					else
-						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 3);
+						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_int32(next_target.target.Z);
 					break;
 				case 'E':
 					if (next_target.option_inches)
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 0);
+						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 1);
 					else
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 3);
+						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 1000);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint32(next_target.target.E);
 					break;
 				case 'F':
 					// just use raw integer, we need move distance and n_steps to convert it to a useful value, so wait until we have those to convert it
 					if (next_target.option_inches)
-						next_target.target.F = decfloat_to_int(&read_digit, 254, 1);
+						next_target.target.F = decfloat_to_int(&read_digit, 254, 10);
 					else
-						next_target.target.F = decfloat_to_int(&read_digit, 1, 0);
+						next_target.target.F = decfloat_to_int(&read_digit, 1, 1);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint32(next_target.target.F);
 					break;
@@ -184,21 +156,21 @@ void gcode_parse_char(uint8_t c) {
 					// cosmetically this should be done in the temperature section,
 					// but it takes less code, less memory and loses no precision if we do it here instead
 					if ((next_target.M == 104) || (next_target.M == 109))
-						next_target.S = decfloat_to_int(&read_digit, 4, 0);
+						next_target.S = decfloat_to_int(&read_digit, 4, 1);
 					// if this is heater PID stuff, multiply by PID_SCALE because we divide by PID_SCALE later on
 					else if ((next_target.M >= 130) && (next_target.M <= 132))
-						next_target.S = decfloat_to_int(&read_digit, PID_SCALE, 0);
+						next_target.S = decfloat_to_int(&read_digit, PID_SCALE, 1);
 					else
-						next_target.S = decfloat_to_int(&read_digit, 1, 0);
+						next_target.S = decfloat_to_int(&read_digit, 1, 1);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint16(next_target.S);
 					break;
 				case 'P':
 					// if this is dwell, multiply by 1000 to convert seconds to milliseconds
 					if (next_target.G == 4)
-						next_target.P = decfloat_to_int(&read_digit, 1000, 0);
+						next_target.P = decfloat_to_int(&read_digit, 1000, 1);
 					else
-						next_target.P = decfloat_to_int(&read_digit, 1, 0);
+						next_target.P = decfloat_to_int(&read_digit, 1, 1);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint16(next_target.P);
 					break;
@@ -208,12 +180,12 @@ void gcode_parse_char(uint8_t c) {
 						serwrite_uint8(next_target.T);
 					break;
 				case 'N':
-					next_target.N = decfloat_to_int(&read_digit, 1, 0);
+					next_target.N = decfloat_to_int(&read_digit, 1, 1);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint32(next_target.N);
 					break;
 				case '*':
-					next_target.checksum_read = decfloat_to_int(&read_digit, 1, 0);
+					next_target.checksum_read = decfloat_to_int(&read_digit, 1, 1);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint8(next_target.checksum_read);
 					break;
