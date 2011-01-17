@@ -23,26 +23,26 @@ void set_input(pin *p) {
 void assert_pin(pin *p) {
 	if (p->pin) {
 		if (p->asserted)
-			p->port |= p->pin;
+			*p->port |= p->pin;
 		else
-			p->port &= ~(p->pin);
+			*p->port &= ~(p->pin);
 	}
 }
 
 void deassert_pin(pin *p) {
 	if (p->pin) {
 		if (p->asserted)
-			p->port &= ~(p->pin);
+			*p->port &= ~(p->pin);
 		else
-			p->port |= p->pin;
+			*p->port |= p->pin;
 	}
 }
 
 void write_pin(pin *p, uint8_t value) {
 	if (p->pin) {
 		if (value)
-			p->port |= p->pin;
+			*p->port |= p->pin;
 		else
-			p->port &= ~(p->pin);
+			*p->port &= ~(p->pin);
 	}
 }

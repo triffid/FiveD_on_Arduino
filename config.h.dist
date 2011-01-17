@@ -5,7 +5,7 @@
 
 #define	NUM_TEMP_SENSORS	1
 #define	NUM_HEATERS	1
-#define	NUM_AXES	4
+#define	NUM_AXES	5
 #define	NUM_MOVES	8
 
 #define	F_CPU	16000000
@@ -21,7 +21,7 @@ struct {
 	pin	min;
 	pin	max;
 	pin	enable;
-} axes_pins[NUM_AXES];
+} axis_pins[NUM_AXES];
 
 pin	power;
 

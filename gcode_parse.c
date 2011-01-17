@@ -2,6 +2,10 @@
 
 #include	<stdlib.h>
 
+#include	"config.h"
+#include	"axes.h"
+#include	"sersendf.h"
+
 #define	GCODE_LINE_BUFFER_LEN	64
 
 uint8_t		gcode_line[GCODE_LINE_BUFFER_LEN];
@@ -71,8 +75,119 @@ void gcode_parse_line(uint8_t *c) {
 			case STATE_SEMICOLON_COMMENT:
 				// dummy entry to suppress compiler warning
 				break;
-		}
-	}
+		} // switch (state)
+	} // for i=0 .. newline
 
 	// TODO: process line just read
-}
+
+	// first, limit axis words to hard limits
+	// TODO: better to throw an error, or silently limit?
+	uint8_t j;
+	for (j = 0; j < NUM_AXES; j++) {
+		uint8_t d = axes[j].designator - 'A';
+		if (words[d] > axes[j].max)
+			words[d] = axes[j].max;
+		if (words[d] < axes[j].min)
+			words[d] = axes[j].min;
+	}
+
+	// work out what the command is
+	// seen G?
+	if (seen_mask & (1 << ('G' - 'A'))) {
+		uint8_t G = words['G' - 'A'];
+		switch (G) {
+			case 0:
+				// rapid move
+				break;
+			case 1:
+				// synchronised move
+				break;
+			case 4:
+				// dwell
+				break;
+			case 20:
+				// inches as units
+				break;
+			case 21:
+				// mm as units
+				break;
+			case 28:
+				// go to 0
+				break;
+			case 30:
+				// move, then go home
+				break;
+			case 90:
+				// absolute positioning
+				break;
+			case 91:
+				// relative positioning
+				break;
+			case 92:
+				// set current position
+				break;
+			default:
+				sersendf_P(PSTR("Unsupported G-code: %d"), G);
+				break;
+		} // switch (G)
+	} // if seen G
+
+	// seen M?
+	if (seen_mask & (1 << ('M' - 'A'))) {
+		uint8_t M = words['M' - 'A'];
+		switch (M) {
+			case 2:
+				// program end
+				break;
+			case 6:
+				// TODO: M6 actually performs toolchange to tool selected by T command
+				break;
+			case 3:
+			case 101:
+				// extruder on
+				break;
+			case 5:
+			case 103:
+				// extruder off
+				break;
+			case 104:
+				// set temperature
+				break;
+			case 105:
+				// print temperature
+				break;
+			case 7:
+			case 106:
+				// heater on
+				break;
+			case 9:
+			case 107:
+				// heater off
+				break;
+			case 109:
+				// set temperature and wait
+				break;
+			case 110:
+				// set expected line number
+				break;
+			case 112:
+				// immediate stop
+				break;
+			case 114:
+				// report current position
+				break;
+			case 115:
+				// report firmware capabilities
+				break;
+			case 190:
+				// power on
+				break;
+			case 191:
+				// power off
+				break;
+			default:
+				sersendf_P(PSTR("Unsupported M-code: %d"), M);
+				break;
+		} // switch (M)
+	} // if seen M
+} // gcode_parse_line()

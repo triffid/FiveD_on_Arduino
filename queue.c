@@ -42,6 +42,7 @@ void next_move() {
 void queue_step() {
 	if (movebuffer[tail].live)
 		move_step(&movebuffer[tail]);
-	else
+	
+	if (movebuffer[tail].live == 0)
 		next_move();
 }

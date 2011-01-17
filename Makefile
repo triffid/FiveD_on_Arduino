@@ -70,7 +70,7 @@ PROGBAUD = 57600
 
 PROGRAM = FiveD_on_Arduino
 
-SOURCES = $(PROGRAM).c serial.c sermsg.c sersendf.c delay.c timer.c gcode_parse.c move.c queue.c
+SOURCES = $(PROGRAM).c serial.c sermsg.c sersendf.c delay.c timer.c gcode_parse.c move.c queue.c axes.c pins.c
 
 ARCH = avr-
 CC = $(ARCH)gcc
@@ -81,6 +81,7 @@ OPTIMIZE = -Os -ffunction-sections -finline-functions-called-once -mcall-prologu
 # OPTIMIZE = -O0
 CFLAGS = -g -Wall -Wstrict-prototypes $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS) -std=gnu99 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -save-temps
 LDFLAGS = -Wl,--as-needed -Wl,--gc-sections
+LIBS = -lm
 
 OBJ = $(patsubst %.c,%.o,${SOURCES})
 

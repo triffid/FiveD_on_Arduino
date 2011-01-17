@@ -10,12 +10,15 @@ typedef struct {
 typedef struct {
 	position start;
 	position end;
+	
 	union {
 		struct {
 			uint8_t	live	:1;
 		};
 		uint8_t flags;
 	};
+
+	uint32_t step_time;
 } move;
 
 void move_create(move *m);
