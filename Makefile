@@ -38,32 +38,6 @@ MCU_TARGET = atmega644p
 
 ##############################################################################
 #                                                                            #
-# Available Defines:                                                         #
-#                                                                            #
-# DEBUG                                                                      #
-#   enables tons of debugging output. may cause host-side talkers to choke   #
-# XONXOFF                                                                    #
-#   enables XON/XOFF flow control for stupid or crude talkers                #
-# ACCELERATION_REPRAP                                                        #
-#   enables reprap-style acceleration                                        #
-# ACCELERATION_RAMPING                                                       #
-#   enables start/stop ramping                                               #
-# ACCELERATION_TEMPORAL                                                      #
-#   enables experimental temporal step algorithm - not technically a type of #
-#   acceleration, but since it controls step timing it seems appropriate     #
-# GEN3                                                                       #
-#   build for standard reprap electronics instead of your custom rig         #
-# HOST                                                                       #
-#   this is the motherboard for GEN3- don't touch! Extruder has its own      #
-#   Makefile.                                                                #
-#                                                                            #
-##############################################################################
-
-# DEFS = -DF_CPU=$(F_CPU) -DHOST -DGEN3
-# DEFS += "-DDEBUG=1"
-
-##############################################################################
-#                                                                            #
 # Programmer settings for "make program"                                     #
 #                                                                            #
 ##############################################################################
@@ -94,9 +68,9 @@ PROGBAUD = 57600
 #                                                                            #
 ##############################################################################
 
-PROGRAM = mendel
+PROGRAM = FiveD_on_Arduino
 
-SOURCES = $(PROGRAM).c serial.c dda.c gcode_parse.c gcode_process.c timer.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c delay.c intercom.c pinio.c clock.c
+SOURCES = $(PROGRAM).c serial.c sermsg.c sersendf.c delay.c timer.c gcode_parse.c move.c queue.c
 
 ARCH = avr-
 CC = $(ARCH)gcc

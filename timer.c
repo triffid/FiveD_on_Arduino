@@ -2,7 +2,11 @@
 
 #include	<avr/interrupt.h>
 
-#include	"dda_queue.h"
+#include	"config.h"
+#include	"arduino.h"
+#include	"queue.h"
+
+#define TICK_TIME_MS (TICK_TIME / (F_CPU / 1000))
 
 volatile uint32_t	next_step_time;
 
@@ -48,7 +52,7 @@ ISR(TIMER1_CAPT_vect) {
 void timer1_compa_isr(void) __attribute__ ((hot));
 void timer1_compa_isr() {
 	// led on
-	WRITE(SCK, 1);
+// 	WRITE(SCK, 1);
 	
 	// disable this interrupt. if we set a new timeout, it will be re-enabled when appropriate
 	TIMSK1 &= ~MASK(OCIE1A);
@@ -60,7 +64,7 @@ void timer1_compa_isr() {
 	queue_step();
 	
 	// led off
-	WRITE(SCK, 0);
+// 	WRITE(SCK, 0);
 }
 
 ISR(TIMER1_COMPA_vect) {
