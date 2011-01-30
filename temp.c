@@ -284,7 +284,15 @@ void temp_print(uint8_t index) {
 	uint8_t c = 0;
 	
 	c = (temp_sensors_runtime[index].last_read_temp & 3) * 25;
+
+#if BED_HEATER < NUM_HEATERS
+	uint8_t b = 0;
+	b = (temp_sensors_runtime[BED_HEATER].last_read_temp & 3) * 25;
 	
-	sersendf_P(PSTR("T:%u.%u\n"), temp_sensors_runtime[index].last_read_temp >> 2, c);
+	sersendf_P(PSTR("T:%u.%u  B:%u.%u\n"), temp_sensors_runtime[index].last_read_temp >> 2, c, temp_sensors_runtime[BED_HEATER].last_read_temp >> 2 , b);
+#else
+		sersendf_P(PSTR("T:%u.%u"), temp_sensors_runtime[index].last_read_temp >> 2, c);
+#endif
+
 }
 #endif
