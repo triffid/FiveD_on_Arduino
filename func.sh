@@ -305,6 +305,38 @@ ENDPERL
 }
 
 # Read status of PID routines.
+mendel_readsym_nexttarget() {
+	local val=$(mendel_readsym next_target)
+	perl - <<'ENDPERL' -- $val
+		$i = -1;
+		@a = qw/flags 2 G 1 M 1 X 4 Y 4 Z 4 E 4 F 4 S 2 P 2 T 1 N 4 eN 4 cr 1 cc 1/;
+		$c = 1234567;
+		while (length $ARGV[1]) {
+			if ($c > ($#a / 2)) {
+				$i++;
+				$c = 0;
+			}
+			if ($a[$c * 2 + 1] & 8) {
+				printf "\n";
+			}
+			if (($a[$c * 2 + 1] & 7) == 4) {
+				$ARGV[1] =~ s#^(..)(..)(..)(..)##;
+				printf "%s: %d\t", $a[$c * 2], eval "0x$4$3$2$1";
+			}
+			if (($a[$c * 2 + 1] & 7) == 2) {
+				$ARGV[1] =~ s#^(..)(..)##;
+				printf "%s: %d\t", $a[$c * 2], eval "0x$2$1";
+			}
+			elsif (($a[$c * 2 + 1] & 7) == 1) {
+				$ARGV[1] =~ s#^(..)##;
+				printf "%s: %d\t", $a[$c * 2], eval "0x$1";
+			}
+			$c++;
+		}
+		printf "\n";
+ENDPERL
+}
+
 mendel_heater_pid() {
 	local P=$(mendel_readsym_int16 heater_p)
 	local I=$(mendel_readsym_int16 heater_i)

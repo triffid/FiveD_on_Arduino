@@ -1,81 +1,240 @@
 #include	"gcode_parse.h"
 
-#include	<string.h>
+#include	<stdlib.h>
 
+#include	"config.h"
+#include	"sersendf.h"
 #include	"serial.h"
 #include	"sermsg.h"
-#include	"dda_queue.h"
-#include	"debug.h"
-#include	"heater.h"
-#include	"sersendf.h"
-
 #include	"gcode_process.h"
 
-/*
-	Switch user friendly values to coding friendly values
 
-	This also affects the possible build volume. We have +/- 2^31 numbers available and as we internally measure position in steps and use a precision factor of 1000, this translates into a possible range of
+#define	GCODE_LINE_BUFFER_LEN	64
 
-		2^31 mm / STEPS_PER_MM_x / 1000
+#define iA 0
+#define iB 1
+#define iC 2
+#define iD 3
+#define iE 4
+#define iF 5
+#define iG 6
+#define iH 7
+#define iI 8
+#define iJ 9
+#define iK 10
+#define iL 11
+#define iM 12
+#define iN 13
+#define iO 14
+#define iP 15
+#define iQ 16
+#define iR 17
+#define iS 18
+#define iT 19
+#define iU 20
+#define iV 21
+#define iW 22
+#define iX 23
+#define iY 24
+#define iZ 25
+#define	iAsterisk	26
 
-	for each axis. For a M6 threaded rod driven machine and 1/16 microstepping this evaluates to
+GCODE_COMMAND next_target;
 
-		2^31 mm / 200 / 16 / 1000 = 671 mm,
+uint8_t		gcode_line[GCODE_LINE_BUFFER_LEN];
+uint8_t		gcode_line_pointer = 0;
 
-	which is about the worst case we have. All other machines have a bigger build volume.
-*/
+float			words[32];
+uint32_t	seen_mask = 0;
 
-#define	STEPS_PER_M_X			((uint32_t) ((STEPS_PER_MM_X * 1000.0) + 0.5))
-#define	STEPS_PER_M_Y			((uint32_t) ((STEPS_PER_MM_Y * 1000.0) + 0.5))
-#define	STEPS_PER_M_Z			((uint32_t) ((STEPS_PER_MM_Z * 1000.0) + 0.5))
-#define	STEPS_PER_M_E			((uint32_t) ((STEPS_PER_MM_E * 1000.0) + 0.5))
+#define	SEEN(c)	(seen_mask & (1L << (c)))
 
-/*
-	mm -> inch conversion
-*/
+uint32_t	line_number = 0;
 
-#define	STEPS_PER_IN_X		((uint32_t) ((25.4 * STEPS_PER_MM_X) + 0.5))
-#define	STEPS_PER_IN_Y		((uint32_t) ((25.4 * STEPS_PER_MM_Y) + 0.5))
-#define	STEPS_PER_IN_Z		((uint32_t) ((25.4 * STEPS_PER_MM_Z) + 0.5))
-#define	STEPS_PER_IN_E		((uint32_t) ((25.4 * STEPS_PER_MM_E) + 0.5))
+const uint8_t char2index(uint8_t c) __attribute__ ((pure));
+const uint8_t char2index(uint8_t c) {
+	if (c >= 'a' && c <= 'z')
+		return c - 'a';
+	if (c >= 'A' && c <= 'Z')
+		return c - 'A';
+	if (c == '*')
+		return 26;
+	return 255;
+}
 
-uint8_t last_field = 0;
-
-#define crc(a, b)		(a ^ b)
-
-decfloat read_digit					__attribute__ ((__section__ (".bss")));
-
-GCODE_COMMAND next_target		__attribute__ ((__section__ (".bss")));
-
-/*
-	utility functions
-*/
-extern const uint32_t powers[];  // defined in sermsg.c
-const int32_t rounding[DECFLOAT_EXP_MAX] = {0,  5,  50,  500,  5000,  50000,  500000};
-
-static int32_t decfloat_to_int(decfloat *df, int32_t multiplicand, uint32_t denominator) {
-	int32_t	r = df->mantissa;
-	uint8_t	e = df->exponent;
-
-	// e=1 means we've seen a decimal point but no digits after it, and e=2 means we've seen a decimal point with one digit so it's too high by one if not zero
-	if (e)
-		e--;
-
-	int32_t	rnew1 = r * (multiplicand / denominator);
-	if (e)
-	{
-		int32_t	rnew2 = r * (multiplicand % denominator) / denominator;
-		r = rnew1 + rnew2;
-
-		r = (r + rounding[e]) / powers[e];
+void gcode_parse_char(uint8_t c) {
+	if (gcode_line_pointer < (GCODE_LINE_BUFFER_LEN - 1))
+		gcode_line[gcode_line_pointer++] = c;
+	if ((c == 13) || (c == 10)) {
+		uint8_t i;
+		for (i = gcode_line_pointer; i < GCODE_LINE_BUFFER_LEN; i++)
+			gcode_line[i] = 0;
+		if (gcode_line_pointer > 2)
+			gcode_parse_line(gcode_line);
+		gcode_line_pointer = 0;
 	}
-	else
-	{
-		int32_t	rnew2 = (r * (multiplicand % denominator) + (denominator / 2)) / denominator;
-		r = rnew1 + rnew2;
-	}
+}
 
-	return df->sign ? -r : r;
+void gcode_parse_line(uint8_t *c) {
+	enum {
+		STATE_FIND_WORD,
+		STATE_FIND_VALUE,
+		STATE_SEMICOLON_COMMENT,
+		STATE_BRACKET_COMMENT,
+	} state = STATE_FIND_WORD;
+	
+	uint8_t i;	// string index
+	uint8_t w = 0;	// current gcode word
+	uint8_t checksum = 0;
+	
+	seen_mask = 0;
+	
+	// calculate checksum
+	for(i = 0; c[i] != '*' && c[i] != 0; i++)
+		checksum = checksum ^ c[i];
+	
+	// extract gcode words from line
+	for (i = 0; c[i] != 0 && c[i] != 13 && c[i] != 10; i++) {
+		switch (state) {
+			case STATE_FIND_WORD:
+				// start of word
+				if (char2index(c[i]) < 255) {
+					w = char2index(c[i]);
+					state = STATE_FIND_VALUE;
+				}
+				// comment until end of line
+				if (c[i] == ';')
+					state = STATE_SEMICOLON_COMMENT;
+				// comment until close bracket
+				if (c[i] == '(')
+					state = STATE_BRACKET_COMMENT;
+				break;
+			case STATE_FIND_VALUE:
+				if ((c[i] >= '0' && c[i] <= '9') || c[i] == '-') {
+					uint8_t	*ep;
+					float v = strtod((const char *) &c[i], (char **) &ep);
+					state = STATE_FIND_WORD;
+					if (ep > &c[i]) {
+// 						sersendf_P(PSTR("[seen %c: %lx->"), w + 'A', seen_mask);
+						seen_mask |= (1L << w);
+// 						sersendf_P(PSTR("%lx]"), seen_mask);
+						words[w] = v;
+						i = ep - c - 1;
+					}
+				}
+				break;
+			case STATE_BRACKET_COMMENT:
+				if (c[i] == ')')
+					state = STATE_FIND_WORD;
+				break;
+			case STATE_SEMICOLON_COMMENT:
+				// dummy entry to suppress compiler warning
+				break;
+		} // switch (state)
+	} // for i=0 .. newline
+	
+	// TODO: process line just read
+	
+	if (SEEN(iAsterisk)) {
+		if (checksum != words[iAsterisk]) {
+			if (seen_mask & iAsterisk)
+				sersendf_P(PSTR("rs %d "), ((uint8_t) words[iAsterisk]));
+			sersendf_P(PSTR("Bad checksum, received %d, expected %d\n"), ((uint8_t) words[iAsterisk]), checksum);
+			seen_mask = 0;
+			return;
+		}
+	}
+	
+	if (SEEN(iN)) {
+		if (((uint32_t) words[iN]) != line_number) {
+			sersendf_P(PSTR("Bad line number, received %ld, expected %ld\n"), ((uint32_t) words[iN]), line_number);
+			seen_mask = 0;
+			return;
+		}
+		line_number++;
+	}
+	
+	serial_writestr_P(PSTR("ok "));
+
+	// patch words into next_target struct
+	// TODO: eliminate next_target, update gcode_process to use words[] directly
+
+	next_target.flags = 0;
+	if (SEEN(iG)) {
+		next_target.seen_G = 1;
+		next_target.G = words[iG];
+// 		sersendf_P(PSTR("G:%d/"), next_target.G);
+	}
+	if (SEEN(iM)) {
+		next_target.seen_M = 1;
+		next_target.M = words[iM];
+// 		sersendf_P(PSTR("M:%d/"), next_target.M);
+	}
+	if (SEEN(iX)) {
+		next_target.seen_X = 1;
+		next_target.target.X = words[iX] * STEPS_PER_MM_X;
+// 		sersendf_P(PSTR("X:%ld/"), next_target.target.X);
+	}
+	if (SEEN(iY)) {
+		next_target.seen_Y = 1;
+		next_target.target.Y = words[iY] * STEPS_PER_MM_Y;
+// 		sersendf_P(PSTR("Y:%ld/"), next_target.target.Y);
+	}
+	if (SEEN(iZ)) {
+		next_target.seen_Z = 1;
+		next_target.target.Z = words[iZ] * STEPS_PER_MM_Z;
+// 		sersendf_P(PSTR("Z:%ld/"), next_target.target.Z);
+	}
+	if (SEEN(iE)) {
+		next_target.seen_E = 1;
+		next_target.target.E = words[iE] * STEPS_PER_MM_E;
+// 		sersendf_P(PSTR("E:%ld/"), next_target.target.E);
+	}
+	if (SEEN(iF)) {
+		next_target.seen_F = 1;
+		next_target.target.F = words[iF];
+// 		sersendf_P(PSTR("F:%ld/"), next_target.target.F);
+	}
+	if (SEEN(iS)) {
+		next_target.seen_S = 1;
+		// if this is temperature, multiply by 4 to convert to quarter-degree units
+		// cosmetically this should be done in the temperature section,
+		// but it takes less code, less memory and loses no precision if we do it here instead
+		if ((next_target.M == 104) || (next_target.M == 109))
+			next_target.S = words[iS] * 4.0;
+		// if this is heater PID stuff, multiply by PID_SCALE because we divide by PID_SCALE later on
+		else if ((next_target.M >= 130) && (next_target.M <= 132))
+			next_target.S = words[iS] * PID_SCALE;
+		else
+			next_target.S = words[iS];
+// 		sersendf_P(PSTR("S:%d/"), next_target.S);
+	}
+	if (SEEN(iP)) {
+		next_target.seen_P = 1;
+		next_target.P = words[iP];
+// 		sersendf_P(PSTR("P:%u/"), next_target.P);
+	}
+	if (SEEN(iT)) {
+		next_target.seen_T = 1;
+		next_target.T = words[iT];
+// 		sersendf_P(PSTR("T:%d/"), next_target.T);
+	}
+	if (SEEN(iN)) {
+		next_target.seen_N = 1;
+		next_target.N = words[iN];
+// 		sersendf_P(PSTR("N:%lu/"), next_target.N);
+	}
+	next_target.N_expected = line_number;
+	if (SEEN(iAsterisk)) {
+		next_target.seen_checksum = 1;
+		next_target.checksum_read = words[iAsterisk];
+	}
+	next_target.checksum_calculated = checksum;
+
+	process_gcode_command();
+	serial_writechar('\n');
+
+	seen_mask = 0;
 }
 
 /****************************************************************************
@@ -84,6 +243,7 @@ static int32_t decfloat_to_int(decfloat *df, int32_t multiplicand, uint32_t deno
 *                                                                           *
 ****************************************************************************/
 
+#if 0
 void gcode_parse_char(uint8_t c) {
 	#ifdef ASTERISK_IN_CHECKSUM_INCLUDED
 	if (next_target.seen_checksum == 0)
@@ -376,3 +536,4 @@ void request_resend(void) {
 	serwrite_uint8(next_target.N);
 	serial_writechar('\n');
 }
+#endif
