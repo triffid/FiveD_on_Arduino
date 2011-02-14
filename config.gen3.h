@@ -249,6 +249,9 @@ DEFINE_TEMP_SENSOR(noheater,	TT_INTERCOM,		0)
 *                                                                           *
 * Define your heaters here                                                  *
 *                                                                           *
+* WARNING: For GEN3, ONLY DEFINE HEATERS CONNECTED TO YOUR MOTHERBOARD HERE *
+* Heaters connected to your extruder controller belong in extruder/config.h *
+*                                                                           *
 * If your heater isn't on a PWM-able pin, set heater_pwm to zero and we'll  *
 *   use bang-bang output. Note that PID will still be used                  *
 *                                                                           *
