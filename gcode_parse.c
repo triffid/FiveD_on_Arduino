@@ -137,8 +137,8 @@ void gcode_parse_line(uint8_t *c) {
 	
 	if (SEEN(iAsterisk)) {
 		if (checksum != words[iAsterisk]) {
-			if (seen_mask & iAsterisk)
-				sersendf_P(PSTR("rs %d "), ((uint8_t) words[iAsterisk]));
+			if (SEEN(iN))
+				sersendf_P(PSTR("rs N%lu "), ((uint32_t) words[iN]));
 			sersendf_P(PSTR("Bad checksum, received %d, expected %d\n"), ((uint8_t) words[iAsterisk]), checksum);
 			seen_mask = 0;
 			return;
@@ -147,7 +147,7 @@ void gcode_parse_line(uint8_t *c) {
 	
 	if (SEEN(iN)) {
 		if (((uint32_t) words[iN]) != line_number) {
-			sersendf_P(PSTR("Bad line number, received %ld, expected %ld\n"), ((uint32_t) words[iN]), line_number);
+			sersendf_P(PSTR("rs N%lu Bad line number, received %lu, expected %lu\n"), line_number, ((uint32_t) words[iN]), line_number);
 			seen_mask = 0;
 			return;
 		}
