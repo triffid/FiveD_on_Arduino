@@ -155,7 +155,7 @@ void gcode_parse_char(uint8_t c) {
 					// if this is temperature, multiply by 4 to convert to quarter-degree units
 					// cosmetically this should be done in the temperature section,
 					// but it takes less code, less memory and loses no precision if we do it here instead
-					if ((next_target.M == 104) || (next_target.M == 109))
+					if ((next_target.M == 104) || (next_target.M == 109) || (next_target.M == 140))
 						next_target.S = decfloat_to_int(&read_digit, 4, 1);
 					// if this is heater PID stuff, multiply by PID_SCALE because we divide by PID_SCALE later on
 					else if ((next_target.M >= 130) && (next_target.M <= 132))
@@ -166,11 +166,7 @@ void gcode_parse_char(uint8_t c) {
 						serwrite_uint16(next_target.S);
 					break;
 				case 'P':
-					// if this is dwell, multiply by 1000 to convert seconds to milliseconds
-					if (next_target.G == 4)
-						next_target.P = decfloat_to_int(&read_digit, 1000, 1);
-					else
-						next_target.P = decfloat_to_int(&read_digit, 1, 1);
+					next_target.P = decfloat_to_int(&read_digit, 1, 1);
 					if (debug_flags & DEBUG_ECHO)
 						serwrite_uint16(next_target.P);
 					break;
@@ -336,12 +332,12 @@ void gcode_parse_char(uint8_t c) {
 					next_target.N_expected = next_target.N + 1;
 			}
 			else {
-				sersendf_P(PSTR("rs %ld Expected checksum %d\n"), next_target.N_expected, next_target.checksum_calculated);
+				sersendf_P(PSTR("rs N%ld Expected checksum %d\n"), next_target.N_expected, next_target.checksum_calculated);
 				request_resend();
 			}
 		}
 		else {
-			sersendf_P(PSTR("rs %ld Expected line number %ld\n"), next_target.N_expected, next_target.N_expected);
+			sersendf_P(PSTR("rs N%ld Expected line number %ld\n"), next_target.N_expected, next_target.N_expected);
 			request_resend();
 		}
 
